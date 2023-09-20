@@ -8,12 +8,12 @@ import org.slf4j.LoggerFactory;
 
 import com.gill.graft.LogManager;
 import com.gill.graft.Node;
+import com.gill.graft.apis.RaftRpcService;
 import com.gill.graft.common.Utils;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.entity.RequestVoteParam;
 import com.gill.graft.machine.RaftEvent;
 import com.gill.graft.machine.RaftEventParams;
-import com.gill.graft.service.InnerNodeService;
 
 import cn.hutool.core.util.RandomUtil;
 import javafx.util.Pair;
@@ -48,7 +48,7 @@ public class Candidate {
 		}
 		log.info("vote for self when term: {}", nextTerm);
 		ExecutorService clusterPool = self.getThreadPools().getClusterPool();
-		List<InnerNodeService> followers = self.getFollowers();
+		List<RaftRpcService> followers = self.getFollowers();
 		boolean success = Utils.majorityCall(followers, follower -> doVote(self, follower, nextTerm), Reply::isSuccess,
 				clusterPool, "vote");
 		if (success) {
@@ -62,10 +62,10 @@ public class Candidate {
 		}
 	}
 
-	private static Reply doVote(Node self, InnerNodeService follower, long term) {
+	private static Reply doVote(Node self, RaftRpcService follower, long term) {
 		LogManager logManager = self.getLogManager();
 		Pair<Long, Integer> lastLog = logManager.lastLog();
-		int nodeId = self.getID();
+		int nodeId = self.getId();
 		long lastLogTerm = lastLog.getKey();
 		int lastLogIdx = lastLog.getValue();
 		return follower.requestVote(new RequestVoteParam(nodeId, term, lastLogTerm, lastLogIdx));

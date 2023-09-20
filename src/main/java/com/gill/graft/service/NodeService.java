@@ -2,7 +2,7 @@ package com.gill.graft.service;
 
 import java.util.List;
 
-import com.gill.graft.Node;
+import com.gill.graft.apis.RaftRpcService;
 
 /**
  * NodeService
@@ -25,7 +25,7 @@ public interface NodeService {
 	 * @param nodes
 	 *            集群节点
 	 */
-	void start(List<? extends Node> nodes);
+	void start(List<? extends RaftRpcService> nodes);
 
 	/**
 	 * 停止节点
@@ -36,5 +36,4 @@ public interface NodeService {
 	 * 清除节点数据
 	 */
 	void clear();
-
 }

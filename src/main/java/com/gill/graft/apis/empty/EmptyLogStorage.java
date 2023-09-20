@@ -1,8 +1,9 @@
-package com.gill.graft.apis;
+package com.gill.graft.apis.empty;
 
 import java.util.Collections;
 import java.util.List;
 
+import com.gill.graft.apis.LogStorage;
 import com.gill.graft.model.LogEntry;
 
 /**

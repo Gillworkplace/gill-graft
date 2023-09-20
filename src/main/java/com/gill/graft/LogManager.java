@@ -10,8 +10,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.gill.graft.apis.LogStorage;
 import com.gill.graft.config.RaftConfig;
 import com.gill.graft.model.LogEntry;
-
 import com.gill.graft.service.PrintService;
+
 import javafx.util.Pair;
 
 /**

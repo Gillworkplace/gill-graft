@@ -112,10 +112,10 @@ public class NodeTest extends BaseTest {
 		MockNode leader = leaderOpt.get();
 		List<LogEntry> logs = leader.getLog();
 		String expected = JSONUtil.toJsonStr(logs);
-		Set<Integer> excludeSet = Arrays.stream(excludeNodes).map(Node::getID).collect(Collectors.toSet());
+		Set<Integer> excludeSet = Arrays.stream(excludeNodes).map(Node::getId).collect(Collectors.toSet());
 		try {
 			for (MockNode node : nodes) {
-				if (excludeSet.contains(node.getID())) {
+				if (excludeSet.contains(node.getId())) {
 					continue;
 				}
 				Assertions.assertEquals(expected, JSONUtil.toJsonStr(node.getLog()));
@@ -169,7 +169,7 @@ public class NodeTest extends BaseTest {
 		}
 	}
 
-	@RepeatedTest(10)
+	@Test
 	public void testNodeInit() {
 		List<MockNode> nodes = nodesInit(1, 250);
 		System.out.println("============ TEST FINISHED =============");
@@ -215,7 +215,7 @@ public class NodeTest extends BaseTest {
 		final int num = 5;
 		List<MockNode> nodes = nodesInitUntilStable(num);
 		MockNode leader = findLeader(nodes);
-		System.out.println("remove leader " + leader.getID());
+		System.out.println("remove leader " + leader.getId());
 		leader.stop();
 		long start = System.currentTimeMillis();
 		waitUtilStable(nodes);
@@ -329,11 +329,9 @@ public class NodeTest extends BaseTest {
 		List<MockNode> nodes = nodesInitUntilStable(n);
 		MockNode leader = findLeader(nodes);
 		leader.propose("1");
-		MockNode[] downNodes = new MockNode[n / 2 + 1];
 		for (int i = 0; i < n / 2 + 1; i++) {
 			MockNode follower = findFollower(nodes);
 			follower.stop();
-			downNodes[i] = follower;
 		}
 		System.out.println("============ FOLLOWERS STOPPED =============");
 		Assertions.assertEquals(-1, (int) leader.propose("2").getIdx());

@@ -21,7 +21,7 @@ public interface InnerNodeService extends NodeService {
 	 *
 	 * @return id
 	 */
-	int getID();
+	int getId();
 
 	/**
 	 * raft 预投票（防止term膨胀）
@@ -114,11 +114,4 @@ public interface InnerNodeService extends NodeService {
 	 * @return 响应
 	 */
 	Reply doReplicateSnapshot(ReplicateSnapshotParam param);
-
-	/**
-	 * toString
-	 *
-	 * @return 内容
-	 */
-	String toString();
 }

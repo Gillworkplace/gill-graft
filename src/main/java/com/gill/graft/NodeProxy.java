@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gill.graft.apis.DataStorage;
+import com.gill.graft.apis.RaftRpcService;
 import com.gill.graft.common.Utils;
 import com.gill.graft.entity.AppendLogEntriesParam;
 import com.gill.graft.entity.AppendLogReply;
@@ -24,7 +25,6 @@ import com.gill.graft.entity.Reply;
 import com.gill.graft.exception.SyncSnapshotException;
 import com.gill.graft.model.LogEntry;
 import com.gill.graft.model.Snapshot;
-import com.gill.graft.service.InnerNodeService;
 import com.gill.graft.service.PrintService;
 
 /**
@@ -43,7 +43,7 @@ public class NodeProxy implements Runnable, PrintService {
 
 	private final Node self;
 
-	private final InnerNodeService follower;
+	private final RaftRpcService follower;
 
 	private int preLogIdx;
 
@@ -53,22 +53,22 @@ public class NodeProxy implements Runnable, PrintService {
 
 	private volatile boolean running = true;
 
-	public NodeProxy(Node self, InnerNodeService follower, int lastLogIdx) {
+	public NodeProxy(Node self, RaftRpcService follower, int lastLogIdx) {
 		this.self = self;
 		this.follower = follower;
 		this.preLogIdx = lastLogIdx;
 		this.executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(10),
-				r -> new Thread(r, "node-proxy-" + self.getID() + "-" + follower.getID()));
+				r -> new Thread(r, "node-proxy-" + self.getId() + "-" + follower.getId()));
 	}
 
 	public int getID() {
-		return follower.getID();
+		return follower.getId();
 	}
 
 	@Override
 	public String println() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("NODE-PROXY-").append(follower.getID()).append(System.lineSeparator());
+		sb.append("NODE-PROXY-").append(follower.getId()).append(System.lineSeparator());
 		sb.append("running: ").append(running).append(System.lineSeparator());
 		sb.append("preLogIdx: ").append(preLogIdx).append(System.lineSeparator());
 		sb.append("waiting append logs: ").append(logs).append(System.lineSeparator());
@@ -89,7 +89,7 @@ public class NodeProxy implements Runnable, PrintService {
 	public void stop() {
 		running = false;
 		this.executor.shutdownNow();
-		Utils.awaitTermination(this.executor, "proxy-" + self.getID() + "-" + follower.getID());
+		Utils.awaitTermination(this.executor, "proxy-" + self.getId() + "-" + follower.getId());
 	}
 
 	/**
@@ -110,7 +110,7 @@ public class NodeProxy implements Runnable, PrintService {
 				}
 				putbackLogs(entries);
 			} catch (Exception e) {
-				log.error("node: {} appends logs to {} failed, e: {}", self.getID(), follower.getID(), e.getMessage());
+				log.error("node: {} appends logs to {} failed, e: {}", self.getId(), follower.getId(), e.getMessage());
 				putbackLogs(entries);
 			}
 		}
@@ -131,13 +131,13 @@ public class NodeProxy implements Runnable, PrintService {
 	}
 
 	private AppendLogReply doAppendLogs(List<LogEntry> appendLogs) {
-		int nodeId = self.getID();
+		int nodeId = self.getId();
 		long term = self.getTerm();
 		long preLogTerm = self.getLogManager().getLog(preLogIdx).getTerm();
 		int committedIdx = self.getCommittedIdx();
 		AppendLogEntriesParam param = new AppendLogEntriesParam(nodeId, term, preLogTerm, preLogIdx, committedIdx,
 				appendLogs);
-		log.debug("node: {} proposes to {}, logs: {}, committedIdx: {}", nodeId, follower.getID(), appendLogs,
+		log.debug("node: {} proposes to {}, logs: {}, committedIdx: {}", nodeId, follower.getId(), appendLogs,
 				committedIdx);
 		return follower.appendLogEntries(param);
 	}
@@ -171,8 +171,8 @@ public class NodeProxy implements Runnable, PrintService {
 	}
 
 	private void syncSnapshot(List<LogEntryReply> entries) throws SyncSnapshotException {
-		int nodeId = self.getID();
-		log.debug("node: {} sync snapshot to {}", nodeId, follower.getID());
+		int nodeId = self.getId();
+		log.debug("node: {} sync snapshot to {}", nodeId, follower.getId());
 		DataStorage dataStorage = self.getDataStorage();
 		Snapshot snapshot = dataStorage.getSnapshot();
 		long term = self.getTerm();
@@ -183,9 +183,9 @@ public class NodeProxy implements Runnable, PrintService {
 		Reply reply = follower.replicateSnapshot(param);
 		if (!reply.isSuccess()) {
 			throw new SyncSnapshotException(
-					String.format("node: %s sync snapshot to %s failed, term: %s", nodeId, follower.getID(), term));
+					String.format("node: %s sync snapshot to %s failed, term: %s", nodeId, follower.getId(), term));
 		}
-		log.info("node: {} finish to sync snapshot to {}, applyIdx: {}, applyTerm: {}", nodeId, follower.getID(),
+		log.info("node: {} finish to sync snapshot to {}, applyIdx: {}, applyTerm: {}", nodeId, follower.getId(),
 				applyIdx, applyTerm);
 		clearLogsBeforeApplyIdx(applyIdx, entries);
 	}
@@ -207,11 +207,11 @@ public class NodeProxy implements Runnable, PrintService {
 
 		// 如果compareIdx小于 snapshot 的 applyIdx说明同步的日志可能已被删除，直接同步快照
 		if (compareIdx < dataStorage.getApplyIdx()) {
-			log.debug("node: {} is repairing logs, but needs to sync snapshots", self.getID());
+			log.debug("node: {} is repairing logs, but needs to sync snapshots", self.getId());
 			syncSnapshot(entries);
 			return;
 		}
-		log.debug("node: {} repair logs to {}, compare idx: {}", self.getID(), follower.getID(), compareIdx);
+		log.debug("node: {} repair logs to {}, compare idx: {}", self.getId(), follower.getId(), compareIdx);
 
 		// 从日志中获取compareIdx到队列第一个元素的所有日志
 		LogManager logManager = self.getLogManager();

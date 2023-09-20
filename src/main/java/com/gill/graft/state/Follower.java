@@ -10,11 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gill.graft.Node;
+import com.gill.graft.apis.RaftRpcService;
 import com.gill.graft.common.Utils;
 import com.gill.graft.config.RaftConfig;
 import com.gill.graft.machine.RaftEvent;
 import com.gill.graft.machine.RaftEventParams;
-import com.gill.graft.service.InnerNodeService;
 
 import javafx.util.Pair;
 
@@ -48,7 +48,7 @@ public class Follower {
 			}
 			self.unstable();
 			self.publishEvent(RaftEvent.PING_TIMEOUT, new RaftEventParams(self.getTerm()));
-		}, config.getCheckTimeoutInterval() + self.getPriority() * 2L, self.getID());
+		}, config.getCheckTimeoutInterval() + self.getPriority() * 2L, self.getId());
 	}
 
 	/**
@@ -69,8 +69,8 @@ public class Follower {
 	 *            节点
 	 */
 	public static void init(Node self) {
-		int nodeId = self.getID();
-		List<InnerNodeService> followers = self.getFollowers();
+		int nodeId = self.getId();
+		List<RaftRpcService> followers = self.getFollowers();
 		self.getThreadPools()
 				// .setClusterPool(new ThreadPoolExecutor(followers.size() + 1, followers.size()
 				// + 1, 0,

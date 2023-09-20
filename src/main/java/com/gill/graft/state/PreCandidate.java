@@ -3,17 +3,17 @@ package com.gill.graft.state;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import com.gill.graft.LogManager;
-import com.gill.graft.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.gill.graft.LogManager;
+import com.gill.graft.Node;
+import com.gill.graft.apis.RaftRpcService;
 import com.gill.graft.common.Utils;
 import com.gill.graft.entity.PreVoteParam;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.machine.RaftEvent;
 import com.gill.graft.machine.RaftEventParams;
-import com.gill.graft.service.InnerNodeService;
 
 import cn.hutool.core.util.RandomUtil;
 import javafx.util.Pair;
@@ -40,7 +40,7 @@ public class PreCandidate {
 		long pTerm = params.getTerm();
 		log.info("start to pre-vote when term: {}", pTerm);
 		ExecutorService clusterPool = self.getThreadPools().getClusterPool();
-		List<InnerNodeService> followers = self.getFollowers();
+		List<RaftRpcService> followers = self.getFollowers();
 		boolean success = Utils.majorityCall(followers, follower -> doPreVote(self, follower, params), Reply::isSuccess,
 				clusterPool, "pre-vote");
 		if (success) {
@@ -54,10 +54,10 @@ public class PreCandidate {
 		}
 	}
 
-	private static Reply doPreVote(Node self, InnerNodeService follower, RaftEventParams params) {
+	private static Reply doPreVote(Node self, RaftRpcService follower, RaftEventParams params) {
 		LogManager logManager = self.getLogManager();
 		Pair<Long, Integer> lastLog = logManager.lastLog();
-		int nodeId = self.getID();
+		int nodeId = self.getId();
 		long term = params.getTerm();
 		long lastLogTerm = lastLog.getKey();
 		int lastLogIdx = lastLog.getValue();

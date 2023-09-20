@@ -13,11 +13,11 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.gill.graft.apis.RaftRpcService;
 import com.gill.graft.common.Utils;
 import com.gill.graft.entity.AppendLogReply;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.model.LogEntry;
-import com.gill.graft.service.InnerNodeService;
 import com.gill.graft.service.PrintService;
 
 /**
@@ -86,7 +86,7 @@ public class ProposeHelper implements PrintService {
 	 * @param preLogIdx
 	 *            日志索引
 	 */
-	public void start(Node node, List<InnerNodeService> followers, int preLogIdx) {
+	public void start(Node node, List<RaftRpcService> followers, int preLogIdx) {
 		List<NodeProxy> proxies = followers.stream().map(follower -> new NodeProxy(node, follower, preLogIdx))
 				.collect(Collectors.toList());
 		proxies.forEach(NodeProxy::start);

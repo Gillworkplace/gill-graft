@@ -76,7 +76,7 @@ public class RaftMachine implements PrintService {
 	public RaftMachine(Node node) {
 		this.node = node;
 		this.executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<>(Collections.emptyList()), r -> new Thread(r, "machine-" + node.getID()),
+				new LinkedBlockingQueue<>(Collections.emptyList()), r -> new Thread(r, "machine-" + node.getId()),
 				(r, executor) -> log.warn("raft machine receive another scheduler"));
 		this.state = RaftState.STRANGER;
 	}

@@ -1,11 +1,11 @@
 package com.gill.graft.example.intmap;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.gill.graft.Node;
-import com.gill.graft.apis.EmptyLogStorage;
-import com.gill.graft.apis.EmptyMetaStorage;
+import com.gill.graft.apis.RaftRpcService;
+import com.gill.graft.apis.empty.EmptyLogStorage;
+import com.gill.graft.apis.empty.EmptyMetaStorage;
 import com.gill.graft.model.ProposeReply;
 
 /**
@@ -29,14 +29,10 @@ public class IntMapServer {
 	/**
 	 * 启动
 	 * 
-	 * @param servers
+	 * @param nodes
 	 *            节点
 	 */
-	public void start(List<? extends IntMapServer> servers) {
-		List<Node> nodes = new ArrayList<>();
-		for (IntMapServer server : servers) {
-			nodes.add(server.node);
-		}
+	public void start(List<? extends RaftRpcService> nodes) {
 		node.start(nodes);
 	}
 

@@ -15,11 +15,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gill.graft.apis.DataStorage;
-import com.gill.graft.apis.EmptyDataStorage;
-import com.gill.graft.apis.EmptyLogStorage;
-import com.gill.graft.apis.EmptyMetaStorage;
 import com.gill.graft.apis.LogStorage;
 import com.gill.graft.apis.MetaStorage;
+import com.gill.graft.apis.RaftRpcService;
+import com.gill.graft.apis.empty.EmptyDataStorage;
+import com.gill.graft.apis.empty.EmptyLogStorage;
+import com.gill.graft.apis.empty.EmptyMetaStorage;
 import com.gill.graft.common.Utils;
 import com.gill.graft.config.RaftConfig;
 import com.gill.graft.entity.AppendLogEntriesParam;
@@ -55,7 +56,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	/**
 	 * 节点属性
 	 */
-	private final int ID;
+	private final int id;
 
 	private int priority = 0;
 
@@ -89,33 +90,33 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	/**
 	 * 集群属性
 	 */
-	private List<InnerNodeService> followers = Collections.emptyList();
+	private List<RaftRpcService> followers = Collections.emptyList();
 
-	private List<? extends Node> nodes = Collections.emptyList();
+	private List<RaftRpcService> nodes = Collections.emptyList();
 
 	public Node() {
-		ID = RandomUtil.randomInt(100, 200);
+		id = RandomUtil.randomInt(100, 200);
 		metaDataManager = new MetaDataManager(new EmptyMetaStorage());
 		dataStorage = new EmptyDataStorage();
 		logManager = new LogManager(new EmptyLogStorage(), config.getLogConfig());
 	}
 
 	public Node(MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
-		ID = RandomUtil.randomInt(100, 200);
+		id = RandomUtil.randomInt(100, 200);
 		metaDataManager = new MetaDataManager(metaStorage);
 		this.dataStorage = dataStorage;
 		this.logManager = new LogManager(logStorage, config.getLogConfig());
 	}
 
 	public Node(int id) {
-		ID = id;
+		this.id = id;
 		metaDataManager = new MetaDataManager(new EmptyMetaStorage());
 		dataStorage = new EmptyDataStorage();
 		logManager = new LogManager(new EmptyLogStorage(), config.getLogConfig());
 	}
 
 	public Node(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
-		ID = id;
+		this.id = id;
 		metaDataManager = new MetaDataManager(metaStorage);
 		this.dataStorage = dataStorage;
 		this.logManager = new LogManager(logStorage, config.getLogConfig());
@@ -133,7 +134,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	 * @return originTerm + 1, -1表示选举自己失败
 	 */
 	public long electSelf(long originTerm) {
-		return metaDataManager.increaseTerm(originTerm, ID);
+		return metaDataManager.increaseTerm(originTerm, id);
 	}
 
 	public int getCommittedIdx() {
@@ -221,7 +222,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	 *            参数
 	 */
 	public void publishEvent(RaftEvent event, RaftEventParams params) {
-		log.debug("node: {} publishes event: {}", ID, event.name());
+		log.debug("node: {} publishes event: {}", id, event.name());
 		this.machine.publishEvent(event, params);
 	}
 
@@ -261,7 +262,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	 * 刷新心跳时间
 	 */
 	private void refreshLastHeartbeatTimestamp() {
-		log.debug("node: {} refresh heartbeat timestamp", ID);
+		log.debug("node: {} refresh heartbeat timestamp", id);
 		heartbeatState.set(getTerm(), System.currentTimeMillis());
 	}
 
@@ -281,31 +282,31 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		// 成功条件：
 		// · 参数中的任期更大，或任期相同但日志索引更大
 		// · 至少一次选举超时时间内没有收到领导者心跳
-		log.debug("node: {} receives PRE_VOTE, param: {}", ID, param);
+		log.debug("node: {} receives PRE_VOTE, param: {}", id, param);
 		long pTerm = param.getTerm();
 		PersistentProperties properties = metaDataManager.getProperties();
 		long term = properties.getTerm();
 
 		// 版本太低 丢弃
 		if (pTerm < term) {
-			log.debug("node: {} discards PRE_VOTE for the old vote's term, client id: {}", ID, param.getNodeId());
+			log.debug("node: {} discards PRE_VOTE for the old vote's term, client id: {}", id, param.getNodeId());
 			return new Reply(false, term);
 		}
 
 		// 日志不够新 丢弃
 		if (pTerm == term && unlatestLog(param.getLastLogTerm(), param.getLastLogIdx())) {
-			log.debug("node: {} discards PRE_VOTE for the old vote's log-index, client id: {}", ID, param.getNodeId());
+			log.debug("node: {} discards PRE_VOTE for the old vote's log-index, client id: {}", id, param.getNodeId());
 			return new Reply(false, term);
 		}
 
 		// 该节点还未超时
 		Pair<Long, Long> pair = heartbeatState.get();
 		if (System.currentTimeMillis() - pair.getValue() < config.getBaseTimeoutInterval()) {
-			log.debug("node: {} discards PRE_VOTE, because the node is not timeout, client id: {}", ID,
+			log.debug("node: {} discards PRE_VOTE, because the node is not timeout, client id: {}", id,
 					param.getNodeId());
 			return new Reply(false, term);
 		}
-		log.info("node: {} accepts PRE_VOTE, client id: {}", ID, param.getNodeId());
+		log.info("node: {} accepts PRE_VOTE, client id: {}", id, param.getNodeId());
 		return new Reply(true, term);
 	}
 
@@ -313,7 +314,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	public Reply doRequestVote(RequestVoteParam param) {
 		lock.lock();
 		try {
-			log.debug("node: {} receives REQUEST_VOTE, param: {}", ID, param);
+			log.debug("node: {} receives REQUEST_VOTE, param: {}", id, param);
 			int nodeId = param.getNodeId();
 			long pTerm = param.getTerm();
 
@@ -323,7 +324,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 			// 版本太低 丢弃
 			if (pTerm < cTerm) {
-				log.debug("node: {} discards REQUEST_VOTE for the old vote's cTerm, client id: {}", ID, nodeId);
+				log.debug("node: {} discards REQUEST_VOTE for the old vote's cTerm, client id: {}", id, nodeId);
 				return new Reply(false, cTerm);
 			}
 
@@ -331,21 +332,21 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 			if (pTerm == cTerm && cVotedFor != null && cVotedFor != nodeId) {
 				log.debug(
 						"node: {} discards REQUEST_VOTE, because node was voted for {} when term was {}, client id: {}",
-						ID, cVotedFor, pTerm, nodeId);
+						id, cVotedFor, pTerm, nodeId);
 				return new Reply(false, pTerm);
 			}
 
 			// 日志不够新 丢弃
 			if (unlatestLog(param.getLastLogTerm(), param.getLastLogIdx())) {
-				log.debug("node: {} discards REQUEST_VOTE for the old vote's log-index, client id: {}", ID, nodeId);
+				log.debug("node: {} discards REQUEST_VOTE for the old vote's log-index, client id: {}", id, nodeId);
 				return new Reply(false, pTerm);
 			}
 
 			if (voteFor(pTerm, nodeId)) {
-				log.info("node: {} REQUEST_VOTE has voted for {}, term: {}", ID, nodeId, pTerm);
+				log.info("node: {} REQUEST_VOTE has voted for {}, term: {}", id, nodeId, pTerm);
 				return new Reply(true, pTerm);
 			}
-			log.debug("node: {} REQUEST_VOTE vote for term {} id {} failed ", ID, pTerm, nodeId);
+			log.debug("node: {} REQUEST_VOTE vote for term {} id {} failed ", id, pTerm, nodeId);
 			return new Reply(false, pTerm);
 		} finally {
 			lock.unlock();
@@ -367,11 +368,11 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 			// 没有logs属性的为ping请求
 			if (param.getLogs() == null || param.getLogs().isEmpty()) {
-				log.trace("node: {} receive heartbeat from {}", ID, param.getNodeId());
+				log.trace("node: {} receive heartbeat from {}", id, param.getNodeId());
 				return new AppendLogReply(true, pTerm);
 			}
 
-			log.debug("node: {} receive appends log from {}", ID, param.getNodeId());
+			log.debug("node: {} receive appends log from {}", id, param.getNodeId());
 
 			// 日志一致性检查
 			int committedIdx = getCommittedIdx();
@@ -420,7 +421,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	public Reply doReplicateSnapshot(ReplicateSnapshotParam param) {
 		lock.lock();
 		try {
-			log.debug("node: {} receives snapshot from {}, term is {}, apply{idx={}, term={}}", ID, param.getNodeId(),
+			log.debug("node: {} receives snapshot from {}, term is {}, apply{idx={}, term={}}", id, param.getNodeId(),
 					param.getTerm(), param.getApplyIdx(), param.getApplyTerm());
 			long pTerm = param.getTerm();
 			long term = getTerm();
@@ -442,20 +443,15 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	}
 
 	@Override
-	public synchronized void start(List<? extends Node> nodes) {
-		this.machine.start();
-		this.nodes = new ArrayList<>(nodes);
-		calcPriority(null);
-		this.followers = nodes.stream().filter(node -> this != node).collect(Collectors.toList());
-		loadData();
-		this.publishEvent(RaftEvent.INIT, new RaftEventParams(getTerm(), true));
+	public synchronized void start(List<? extends RaftRpcService> nodes) {
+		start(nodes, null);
 	}
 
-	public synchronized void start(List<? extends Node> nodes, Integer priority) {
+	public synchronized void start(List<? extends RaftRpcService> nodes, Integer priority) {
 		this.machine.start();
 		this.nodes = new ArrayList<>(nodes);
 		calcPriority(priority);
-		this.followers = nodes.stream().filter(node -> this != node).collect(Collectors.toList());
+		this.followers = nodes.stream().filter(node -> this.id != node.getId()).collect(Collectors.toList());
 		loadData();
 		this.publishEvent(RaftEvent.INIT, new RaftEventParams(getTerm(), true));
 	}
@@ -465,10 +461,10 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 			this.priority = priority;
 			return;
 		}
-		List<? extends Node> sort = this.nodes.stream().sorted(Comparator.comparingInt((Node n) -> n.getID()))
+		List<RaftRpcService> sort = this.nodes.stream().sorted(Comparator.comparingInt(RaftRpcService::getId))
 				.collect(Collectors.toList());
 		for (int i = 0; i < sort.size(); i++) {
-			if (sort.get(i).getID() == ID) {
+			if (sort.get(i).getId() == id) {
 				this.priority = i;
 			}
 		}
@@ -490,7 +486,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		if (!ready() || machine.getState() != RaftState.LEADER) {
 			return new ProposeReply(-1);
 		}
-		log.debug("node: {} propose {}", ID, command);
+		log.debug("node: {} propose {}", id, command);
 		LogEntry logEntry = logManager.createLog(getTerm(), command);
 		ProposeReply reply = new ProposeReply();
 		int logIdx = proposeHelper.propose(logEntry, () -> {
@@ -514,7 +510,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	public String println() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("===================").append(System.lineSeparator());
-		sb.append("node id: ").append(ID).append("\t").append(machine.getState().name()).append(System.lineSeparator());
+		sb.append("node id: ").append(id).append("\t").append(machine.getState().name()).append(System.lineSeparator());
 		sb.append("persistent properties: ").append(metaDataManager.println()).append(System.lineSeparator());
 		sb.append("committed idx: ").append(getCommittedIdx()).append(System.lineSeparator());
 		sb.append("heartbeat state: ").append(heartbeatState).append(System.lineSeparator());
@@ -556,8 +552,8 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	}
 
 	@Override
-	public int getID() {
-		return ID;
+	public int getId() {
+		return id;
 	}
 
 	public int getPriority() {
@@ -592,12 +588,12 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		return proposeHelper;
 	}
 
-	public List<InnerNodeService> getFollowers() {
+	public List<RaftRpcService> getFollowers() {
 		return followers;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("id=%s,state=%s,term=%s;", ID, machine.getState(), getTerm());
+		return String.format("id=%s,state=%s,term=%s;", id, machine.getState(), getTerm());
 	}
 }

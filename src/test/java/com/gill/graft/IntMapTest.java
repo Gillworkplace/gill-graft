@@ -3,12 +3,14 @@ package com.gill.graft;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import com.gill.graft.mock.MockIntMapServer;
+import com.gill.graft.mock.NodeRpcWrapper;
 
 import cn.hutool.core.util.RandomUtil;
 
@@ -87,10 +89,15 @@ public class IntMapTest extends BaseTest {
 		}
 	}
 
+	private List<NodeRpcWrapper> getRpcNodes(List<MockIntMapServer> servers) {
+		return servers.stream().map(MockIntMapServer::getNode).map(NodeRpcWrapper::new).collect(Collectors.toList());
+	}
+
 	private List<MockIntMapServer> nodesInit(int num) {
 		List<MockIntMapServer> servers = init(num);
+		List<NodeRpcWrapper> rpcNodes = getRpcNodes(servers);
 		for (MockIntMapServer server : servers) {
-			server.start(servers);
+			server.start(rpcNodes);
 		}
 		waitUtilStable(servers);
 		assertCluster(servers);
@@ -100,7 +107,7 @@ public class IntMapTest extends BaseTest {
 
 	@Test
 	public void testPutsGetCommand_Leader() {
-		List<MockIntMapServer> servers = nodesInit(5);
+		List<MockIntMapServer> servers = nodesInit(7);
 		MockIntMapServer leader = findLeader(servers);
 		leader.set("test", 123);
 		leader.set("test", 321);
@@ -135,7 +142,7 @@ public class IntMapTest extends BaseTest {
 		System.out.println("============ FOLLOWER STOPPED ===============");
 		int readIdx3 = leader.set("test", 333);
 		int readIdx4 = leader.set("test", 444);
-		follower.start(servers);
+		follower.start(getRpcNodes(servers));
 		System.out.println("============ FOLLOWER STARTED ===============");
 		int readIdx5 = leader.set("test", 555);
 		int readIdx6 = leader.set("test", 666);
