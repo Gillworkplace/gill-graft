@@ -4,16 +4,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.gill.graft.LogManager;
+import com.gill.graft.Node;
+import com.gill.graft.TestUtils;
+import com.gill.graft.example.intmap.IntMapDataStorage;
+import com.gill.graft.example.intmap.IntMapServer;
+import com.gill.graft.machine.RaftMachine;
+import com.gill.graft.machine.RaftState;
 import com.gill.graft.model.LogEntry;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import com.gill.consensus.raftplus.LogManager;
-import com.gill.consensus.raftplus.Node;
-import com.gill.consensus.raftplus.example.intmap.IntMapDataStorage;
-import com.gill.consensus.raftplus.example.intmap.IntMapServer;
-import com.gill.consensus.raftplus.machine.RaftMachine;
-import com.gill.consensus.raftplus.machine.RaftState;
-import com.gill.consensus.raftplus.model.LogEntry;
 
 /**
  * MockIntMapServer
@@ -23,52 +21,51 @@ import com.gill.consensus.raftplus.model.LogEntry;
  **/
 public class MockIntMapServer extends IntMapServer implements TestMethod {
 
-    public MockIntMapServer(int id) {
-        super(id);
-    }
+	public MockIntMapServer(int id) {
+		super(id);
+	}
 
-    public Node getNode() {
-        return (Node) ReflectionTestUtils.getField(this, "node");
-    }
+	public Node getNode() {
+		return TestUtils.getField(this, "node");
+	}
 
-    public RaftMachine getRaftMachine() {
-        return (RaftMachine) ReflectionTestUtils.getField(getNode(), "machine");
-    }
+	public RaftMachine getRaftMachine() {
+		return TestUtils.getField(getNode(), "machine");
+	}
 
-    public void updateCommittedIdx(int committedIdx) {
-        Node node = getNode();
-        node.setCommittedIdx(committedIdx);
-    }
+	public void updateCommittedIdx(int committedIdx) {
+		Node node = getNode();
+		node.setCommittedIdx(committedIdx);
+	}
 
-    @SuppressWarnings("unchecked")
-    public void clearLogsAndData() {
-        Node node = getNode();
-        LogManager logManager = node.getLogManager();
-        TreeMap<Integer, LogEntry> logs = (TreeMap<Integer, LogEntry>) ReflectionTestUtils.getField(logManager, "logs");
-        logs.clear();
-        logs.put(0, new LogEntry(0, 0, ""));
-        IntMapDataStorage dataStorage = (IntMapDataStorage) node.getDataStorage();
-        Map<String, Integer> map = (Map<String, Integer>) ReflectionTestUtils.getField(dataStorage, "map");
-        map.clear();
-    }
+	public void clearLogsAndData() {
+		Node node = getNode();
+		LogManager logManager = node.getLogManager();
+		TreeMap<Integer, LogEntry> logs = TestUtils.getField(logManager, "logs");
+		logs.clear();
+		logs.put(0, new LogEntry(0, 0, ""));
+		IntMapDataStorage dataStorage = (IntMapDataStorage) node.getDataStorage();
+		Map<String, Integer> map = TestUtils.getField(dataStorage, "map");
+		map.clear();
+	}
 
-    @Override
-    public boolean isUp() {
-        return getRaftMachine().getState() != RaftState.STRANGER;
-    }
+	@Override
+	public boolean isUp() {
+		return getRaftMachine().getState() != RaftState.STRANGER;
+	}
 
-    @Override
-    public boolean isLeader() {
-        return getRaftMachine().getState() == RaftState.LEADER;
-    }
+	@Override
+	public boolean isLeader() {
+		return getRaftMachine().getState() == RaftState.LEADER;
+	}
 
-    @Override
-    public boolean isFollower() {
-        return getRaftMachine().getState() == RaftState.FOLLOWER;
-    }
+	@Override
+	public boolean isFollower() {
+		return getRaftMachine().getState() == RaftState.FOLLOWER;
+	}
 
-    @Override
-    public List<LogEntry> getLog() {
-        return getNode().getLogManager().getLogs(0, Integer.MAX_VALUE);
-    }
+	@Override
+	public List<LogEntry> getLog() {
+		return getNode().getLogManager().getLogs(0, Integer.MAX_VALUE);
+	}
 }

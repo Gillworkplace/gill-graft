@@ -2,7 +2,7 @@ package com.gill.graft.mock;
 
 import java.util.List;
 
-import com.gill.consensus.raftplus.model.LogEntry;
+import com.gill.graft.model.LogEntry;
 
 /**
  * TestMethod

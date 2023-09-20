@@ -12,6 +12,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.gill.graft.apis.DataStorage;
 import com.gill.graft.common.Utils;
@@ -20,14 +22,10 @@ import com.gill.graft.entity.AppendLogReply;
 import com.gill.graft.entity.ReplicateSnapshotParam;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.exception.SyncSnapshotException;
-import com.gill.graft.logging.Log;
-import com.gill.graft.logging.LogFactory;
 import com.gill.graft.model.LogEntry;
 import com.gill.graft.model.Snapshot;
 import com.gill.graft.service.InnerNodeService;
 import com.gill.graft.service.PrintService;
-import jdk.nashorn.internal.objects.annotations.Getter;
-import jdk.nashorn.internal.objects.annotations.Setter;
 
 /**
  * NodeProxy
@@ -37,7 +35,7 @@ import jdk.nashorn.internal.objects.annotations.Setter;
  **/
 public class NodeProxy implements Runnable, PrintService {
 
-	private static final Log log = LogFactory.getLog(NodeProxy.class);
+	private static final Logger log = LoggerFactory.getLogger(NodeProxy.class);
 
 	private static final long TIMEOUT = 50L;
 
@@ -137,7 +135,8 @@ public class NodeProxy implements Runnable, PrintService {
 		long term = self.getTerm();
 		long preLogTerm = self.getLogManager().getLog(preLogIdx).getTerm();
 		int committedIdx = self.getCommittedIdx();
-		AppendLogEntriesParam param = new AppendLogEntriesParam(nodeId, term, preLogTerm, preLogIdx, committedIdx, appendLogs);
+		AppendLogEntriesParam param = new AppendLogEntriesParam(nodeId, term, preLogTerm, preLogIdx, committedIdx,
+				appendLogs);
 		log.debug("node: {} proposes to {}, logs: {}, committedIdx: {}", nodeId, follower.getID(), appendLogs,
 				committedIdx);
 		return follower.appendLogEntries(param);

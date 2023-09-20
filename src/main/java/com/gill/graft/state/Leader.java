@@ -12,6 +12,8 @@ import com.gill.graft.entity.AppendLogReply;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.machine.RaftEventParams;
 import com.gill.graft.service.InnerNodeService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Leader
@@ -20,6 +22,8 @@ import com.gill.graft.service.InnerNodeService;
  * @version 2023/09/05
  **/
 public class Leader {
+
+	private static final Logger log = LoggerFactory.getLogger(Leader.class);
 
 	/**
 	 * 启动心跳定时任务

@@ -4,12 +4,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.gill.consensus.raftplus.apis.VersionDataStorage;
-import com.gill.consensus.raftplus.model.Snapshot;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.gill.graft.apis.VersionDataStorage;
+import com.gill.graft.model.Snapshot;
 
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.json.JSONUtil;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Repository
@@ -17,8 +19,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author gill
  * @version 2023/09/07
  **/
-@Slf4j
 public class IntMapDataStorage extends VersionDataStorage {
+
+	private static final Logger log = LoggerFactory.getLogger(IntMapDataStorage.class);
 
 	private Map<String, Integer> map = new HashMap<>(1024);
 

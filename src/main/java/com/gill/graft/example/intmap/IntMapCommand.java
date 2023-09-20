@@ -3,23 +3,12 @@ package com.gill.graft.example.intmap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * MapCommand
  *
  * @author gill
  * @version 2023/09/07
  **/
-@Slf4j
-@Builder(builderMethodName = "innerBuilder")
-@Getter
-@Setter
-@ToString
 public class IntMapCommand {
 
 	public enum Type {
@@ -63,16 +52,31 @@ public class IntMapCommand {
 		return this.type.handler.apply(map, command);
 	}
 
-	/**
-	 * builder
-	 *
-	 * @param type
-	 *            type
-	 * @param key
-	 *            key
-	 * @return builder
-	 */
-	public static IntMapCommandBuilder builder(Type type, String key) {
-		return innerBuilder().type(type).key(key);
+	public Type getType() {
+		return type;
+	}
+
+	public String getKey() {
+		return key;
+	}
+
+	public Integer getValue() {
+		return value;
+	}
+
+	public IntMapCommand(Type type, String key) {
+		this.type = type;
+		this.key = key;
+	}
+
+	public IntMapCommand(Type type, String key, Integer value) {
+		this.type = type;
+		this.key = key;
+		this.value = value;
+	}
+
+	@Override
+	public String toString() {
+		return "IntMapCommand{" + "type=" + type + ", key='" + key + '\'' + ", value=" + value + '}';
 	}
 }

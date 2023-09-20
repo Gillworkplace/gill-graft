@@ -3,10 +3,10 @@ package com.gill.graft.example.intmap;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.gill.consensus.raftplus.Node;
-import com.gill.consensus.raftplus.apis.EmptyLogStorage;
-import com.gill.consensus.raftplus.apis.EmptyMetaStorage;
-import com.gill.consensus.raftplus.model.ProposeReply;
+import com.gill.graft.Node;
+import com.gill.graft.apis.EmptyLogStorage;
+import com.gill.graft.apis.EmptyMetaStorage;
+import com.gill.graft.model.ProposeReply;
 
 /**
  * MapServer
@@ -57,7 +57,7 @@ public class IntMapServer {
 	 * @return xid
 	 */
 	public int set(String key, int value) {
-		IntMapCommand command = IntMapCommand.builder(IntMapCommand.Type.PUT, key).value(value).build();
+		IntMapCommand command = new IntMapCommand(IntMapCommand.Type.PUT, key, value);
 		ProposeReply reply = node.propose(serializer.serialize(command));
 		return reply.getIdx();
 	}

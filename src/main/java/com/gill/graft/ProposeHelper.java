@@ -10,11 +10,12 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.gill.graft.common.Utils;
 import com.gill.graft.entity.AppendLogReply;
 import com.gill.graft.entity.Reply;
-import com.gill.graft.logging.Log;
-import com.gill.graft.logging.LogFactory;
 import com.gill.graft.model.LogEntry;
 import com.gill.graft.service.InnerNodeService;
 import com.gill.graft.service.PrintService;
@@ -27,7 +28,7 @@ import com.gill.graft.service.PrintService;
  **/
 public class ProposeHelper implements PrintService {
 
-	private static final Log log = LogFactory.getLog(ProposeHelper.class);
+	private static final Logger log = LoggerFactory.getLogger(ProposeHelper.class);
 
 	private final ConcurrentSkipListMap<Integer, WaitLogEntry> proposeQueue = new ConcurrentSkipListMap<>();
 

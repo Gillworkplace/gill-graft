@@ -3,8 +3,6 @@ package com.gill.graft.machine;
 import java.util.function.BiConsumer;
 
 import com.gill.graft.Node;
-import com.gill.graft.logging.Log;
-import com.gill.graft.logging.LogFactory;
 import com.gill.graft.state.Candidate;
 import com.gill.graft.state.Common;
 import com.gill.graft.state.Follower;
@@ -20,12 +18,6 @@ import com.gill.graft.state.PreCandidate;
 public enum RaftAction {
 
 	/**
-	 * 空处理
-	 */
-	EMPTY((node, params) -> {
-	}),
-
-	/**
 	 * 初始化
 	 */
 	INIT((node, params) -> Follower.init(node)),
@@ -33,9 +25,7 @@ public enum RaftAction {
 	/**
 	 * 停止
 	 */
-	PRE_STOP((node, params) -> {
-		log.debug("pre-stop, state: {}", node.println());
-	}),
+	PRE_STOP((node, params) -> Common.debug("pre-stop, state: {}", node.println())),
 
 	/**
 	 * 清除请求线程池
@@ -45,9 +35,7 @@ public enum RaftAction {
 	/**
 	 * 停止
 	 */
-	POST_STOP((node, params) -> {
-		log.debug("post-stop, state: {}", node.println());
-	}),
+	POST_STOP((node, params) -> Common.debug("post-stop, state: {}", node.println())),
 
 	/**
 	 * 成为follower
@@ -74,16 +62,14 @@ public enum RaftAction {
 	/**
 	 * leader准备
 	 */
-	INIT_LEADER((node, params) -> {
-		Leader.init(node);
-	}),
+	INIT_LEADER((node, params) -> Leader.init(node)),
 
 	/**
 	 * 成为Leader
 	 */
 	POST_LEADER((node, params) -> {
-		log.debug("become to leader when term is {}", params.getTerm());
-		log.debug(node.println());
+		Common.debug("become to leader when term is {}", params.getTerm());
+		Common.debug(node.println());
 		Leader.startHeartbeatSchedule(node, params);
 		Leader.noOp(node);
 	}),
@@ -97,8 +83,6 @@ public enum RaftAction {
 	});
 
 	private final BiConsumer<Node, RaftEventParams> func;
-
-	private static final Log log = LogFactory.getLog(RaftAction.class);
 
 	RaftAction(BiConsumer<Node, RaftEventParams> func) {
 		this.func = func;

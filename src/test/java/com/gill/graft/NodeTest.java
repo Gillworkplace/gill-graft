@@ -10,16 +10,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.gill.graft.mock.MockNode;
-import com.gill.graft.model.LogEntry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-import com.gill.consensus.BaseTest;
-import com.gill.consensus.raftplus.mock.MockNode;
-import com.gill.consensus.raftplus.model.LogEntry;
+import com.gill.graft.mock.MockNode;
+import com.gill.graft.model.LogEntry;
 
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
@@ -119,7 +115,7 @@ public class NodeTest extends BaseTest {
 		Set<Integer> excludeSet = Arrays.stream(excludeNodes).map(Node::getID).collect(Collectors.toSet());
 		try {
 			for (MockNode node : nodes) {
-				if(excludeSet.contains(node.getID())) {
+				if (excludeSet.contains(node.getID())) {
 					continue;
 				}
 				Assertions.assertEquals(expected, JSONUtil.toJsonStr(node.getLog()));
@@ -334,7 +330,7 @@ public class NodeTest extends BaseTest {
 		MockNode leader = findLeader(nodes);
 		leader.propose("1");
 		MockNode[] downNodes = new MockNode[n / 2 + 1];
-		for(int i = 0; i < n / 2 + 1; i++) {
+		for (int i = 0; i < n / 2 + 1; i++) {
 			MockNode follower = findFollower(nodes);
 			follower.stop();
 			downNodes[i] = follower;

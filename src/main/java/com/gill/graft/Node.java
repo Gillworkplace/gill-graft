@@ -11,6 +11,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.gill.graft.apis.DataStorage;
 import com.gill.graft.apis.EmptyDataStorage;
 import com.gill.graft.apis.EmptyLogStorage;
@@ -25,8 +28,6 @@ import com.gill.graft.entity.PreVoteParam;
 import com.gill.graft.entity.ReplicateSnapshotParam;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.entity.RequestVoteParam;
-import com.gill.graft.logging.Log;
-import com.gill.graft.logging.LogFactory;
 import com.gill.graft.machine.RaftEvent;
 import com.gill.graft.machine.RaftEventParams;
 import com.gill.graft.machine.RaftMachine;
@@ -49,7 +50,7 @@ import javafx.util.Pair;
  **/
 public class Node implements InnerNodeService, RaftService, PrintService {
 
-	private static final Log log = LogFactory.getLog(Node.class);
+	private static final Logger log = LoggerFactory.getLogger(Node.class);
 
 	/**
 	 * 节点属性
@@ -557,6 +558,14 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	@Override
 	public int getID() {
 		return ID;
+	}
+
+	public int getPriority() {
+		return priority;
+	}
+
+	public HeartbeatState getHeartbeatState() {
+		return heartbeatState;
 	}
 
 	public Schedulers getSchedulers() {

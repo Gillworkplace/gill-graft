@@ -2,9 +2,10 @@ package com.gill.graft.state;
 
 import java.util.concurrent.CompletableFuture;
 
-import com.gill.consensus.raftplus.Node;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import lombok.extern.slf4j.Slf4j;
+import com.gill.graft.Node;
 
 /**
  * Common
@@ -12,8 +13,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author gill
  * @version 2023/09/06
  **/
-@Slf4j
 public class Common {
+
+	private static final Logger log = LoggerFactory.getLogger(Common.class);
 
 	/**
 	 * 初始化follower
@@ -25,5 +27,17 @@ public class Common {
 		CompletableFuture<Void> f1 = CompletableFuture.runAsync(() -> self.getThreadPools().setClusterPool(null));
 		CompletableFuture<Void> f2 = CompletableFuture.runAsync(() -> self.getThreadPools().setApiPool(null));
 		CompletableFuture.allOf(f1, f2).join();
+	}
+
+	/**
+	 * 打印debug日志
+	 * 
+	 * @param template
+	 *            模板
+	 * @param params
+	 *            参数
+	 */
+	public static void debug(String template, Object... params) {
+		log.debug(template, params);
 	}
 }

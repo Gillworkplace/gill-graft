@@ -3,9 +3,10 @@ package com.gill.graft.apis;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.gill.graft.common.Utils;
-import com.gill.graft.logging.Log;
-import com.gill.graft.logging.LogFactory;
 import com.gill.graft.model.Snapshot;
 
 /**
@@ -16,7 +17,7 @@ import com.gill.graft.model.Snapshot;
  **/
 public abstract class VersionDataStorage implements DataStorage {
 
-	private static final Log log = LogFactory.getLog(VersionDataStorage.class);
+	private static final Logger log = LoggerFactory.getLogger(VersionDataStorage.class);
 
 	private long applyTerm = 0;
 

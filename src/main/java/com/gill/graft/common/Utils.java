@@ -8,11 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import cn.hutool.core.util.RandomUtil;
-import com.gill.graft.apis.VersionDataStorage;
-import com.gill.graft.logging.Log;
-import com.gill.graft.logging.LogFactory;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utils
@@ -22,11 +21,13 @@ import lombok.extern.slf4j.Slf4j;
  **/
 public class Utils {
 
-	private static final Log log = LogFactory.getLog(Utils.class);
+	private static final Logger log = LoggerFactory.getLogger(Utils.class);
 
-	public final static String NO_OP = "NOOP";
+	public static final String NO_OP = "NOOP";
 
-	public final static String SYNC = "SYNC";
+	public static final String SYNC = "SYNC";
+
+	public static final int CPU_CORES = Runtime.getRuntime().availableProcessors();
 
 	/**
 	 * 耗时计算

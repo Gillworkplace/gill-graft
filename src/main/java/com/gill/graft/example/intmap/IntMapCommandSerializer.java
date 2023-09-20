@@ -1,6 +1,6 @@
 package com.gill.graft.example.intmap;
 
-import com.gill.consensus.raftplus.apis.CommandSerializer;
+import com.gill.graft.apis.CommandSerializer;
 
 import cn.hutool.json.JSONUtil;
 

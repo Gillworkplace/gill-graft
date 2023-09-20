@@ -3,13 +3,10 @@ package com.gill.graft.mock;
 import java.util.List;
 
 import com.gill.graft.Node;
+import com.gill.graft.TestUtils;
 import com.gill.graft.machine.RaftMachine;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import com.gill.consensus.raftplus.Node;
-import com.gill.consensus.raftplus.machine.RaftMachine;
-import com.gill.consensus.raftplus.machine.RaftState;
-import com.gill.consensus.raftplus.model.LogEntry;
+import com.gill.graft.machine.RaftState;
+import com.gill.graft.model.LogEntry;
 
 /**
  * MockNode
@@ -24,7 +21,7 @@ public class MockNode extends Node implements TestMethod {
 	}
 
 	public RaftMachine getRaftMachine() {
-		return (RaftMachine) ReflectionTestUtils.getField(this, "machine");
+		return TestUtils.getField(this, "machine");
 	}
 
 	@Override

@@ -9,9 +9,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.gill.graft.Node;
-import com.gill.graft.logging.Log;
-import com.gill.graft.logging.LogFactory;
 import com.gill.graft.service.PrintService;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
@@ -24,7 +25,7 @@ import com.google.common.collect.ImmutableList;
  **/
 public class RaftMachine implements PrintService {
 
-	private static final Log log = LogFactory.getLog(RaftMachine.class);
+	private static final Logger log = LoggerFactory.getLogger(RaftMachine.class);
 
 	private final HashBasedTable<RaftState, RaftEvent, Target> table = HashBasedTable.create();
 

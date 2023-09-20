@@ -3,18 +3,20 @@ package com.gill.graft.state;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import com.gill.consensus.raftplus.LogManager;
-import com.gill.consensus.raftplus.Node;
-import com.gill.consensus.raftplus.common.Utils;
-import com.gill.consensus.raftplus.entity.PreVoteParam;
-import com.gill.consensus.raftplus.entity.Reply;
-import com.gill.consensus.raftplus.machine.RaftEvent;
-import com.gill.consensus.raftplus.machine.RaftEventParams;
-import com.gill.consensus.raftplus.service.InnerNodeService;
+import com.gill.graft.LogManager;
+import com.gill.graft.Node;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.gill.graft.common.Utils;
+import com.gill.graft.entity.PreVoteParam;
+import com.gill.graft.entity.Reply;
+import com.gill.graft.machine.RaftEvent;
+import com.gill.graft.machine.RaftEventParams;
+import com.gill.graft.service.InnerNodeService;
 
 import cn.hutool.core.util.RandomUtil;
 import javafx.util.Pair;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * PreCandidate
@@ -22,8 +24,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author gill
  * @version 2023/09/05
  **/
-@Slf4j
 public class PreCandidate {
+
+	private static final Logger log = LoggerFactory.getLogger(PreCandidate.class);
 
 	/**
 	 * 预投票

@@ -24,6 +24,10 @@ public class PersistentProperties {
 		this.votedFor = votedFor;
 	}
 
+	public void setTerm(long term) {
+		this.term = term;
+	}
+
 	public void set(PersistentProperties properties) {
 		term = properties.getTerm();
 		votedFor = properties.getVotedFor();

@@ -7,10 +7,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-import com.gill.consensus.BaseTest;
-import com.gill.consensus.raftplus.mock.MockIntMapServer;
+import com.gill.graft.mock.MockIntMapServer;
 
 import cn.hutool.core.util.RandomUtil;
 
@@ -20,7 +18,6 @@ import cn.hutool.core.util.RandomUtil;
  * @author gill
  * @version 2023/09/18
  **/
-@SpringBootTest
 public class IntMapTest extends BaseTest {
 
 	private static List<MockIntMapServer> init(int num) {
