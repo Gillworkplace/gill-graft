@@ -7,6 +7,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.gill.graft.apis.CommandSerializer;
 import com.gill.graft.apis.VersionDataStorage;
 import com.gill.graft.model.Snapshot;
 
@@ -19,7 +20,7 @@ import cn.hutool.json.JSONUtil;
  * @author gill
  * @version 2023/09/07
  **/
-public class IntMapDataStorage extends VersionDataStorage {
+public class IntMapDataStorage extends VersionDataStorage<IntMapCommand> {
 
 	private static final Logger log = LoggerFactory.getLogger(IntMapDataStorage.class);
 
@@ -56,9 +57,13 @@ public class IntMapDataStorage extends VersionDataStorage {
 	}
 
 	@Override
-	public Object apply(String command) {
-		IntMapCommand cm = serializer.deserialize(command);
-		return cm.execute(map, cm);
+	public CommandSerializer<IntMapCommand> getCommandSerializer() {
+		return serializer;
+	}
+
+	@Override
+	public Object apply(IntMapCommand command) {
+		return command.execute(map, command);
 	}
 
 	@Override

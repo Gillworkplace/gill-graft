@@ -15,7 +15,7 @@ import com.gill.graft.model.Snapshot;
  * @author gill
  * @version 2023/09/18
  **/
-public abstract class VersionDataStorage implements DataStorage {
+public abstract class VersionDataStorage<T> implements DataStorage {
 
 	private static final Logger log = LoggerFactory.getLogger(VersionDataStorage.class);
 
@@ -57,7 +57,7 @@ public abstract class VersionDataStorage implements DataStorage {
 				if (Utils.NO_OP.equals(command) || Utils.SYNC.equals(command)) {
 					return null;
 				}
-				return apply(command);
+				return apply(getCommandSerializer().deserialize(command));
 			} finally {
 				lock.unlock();
 			}
@@ -68,13 +68,20 @@ public abstract class VersionDataStorage implements DataStorage {
 	}
 
 	/**
+	 * 获取命令解析器
+	 * 
+	 * @return 解析器
+	 */
+	public abstract CommandSerializer<T> getCommandSerializer();
+
+	/**
 	 * 应用命令
 	 *
 	 * @param command
 	 *            命令
 	 * @return 返回结果
 	 */
-	public abstract Object apply(String command);
+	public abstract Object apply(T command);
 
 	@Override
 	public final void saveSnapshotToFile() {

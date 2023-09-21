@@ -1,5 +1,6 @@
 package com.gill.graft.apis.empty;
 
+import com.gill.graft.apis.CommandSerializer;
 import com.gill.graft.apis.VersionDataStorage;
 import com.gill.graft.model.Snapshot;
 
@@ -9,7 +10,9 @@ import com.gill.graft.model.Snapshot;
  * @author gill
  * @version 2023/09/07
  **/
-public class EmptyDataStorage extends VersionDataStorage {
+public class EmptyDataStorage extends VersionDataStorage<String> {
+
+	private CommandSerializer<String> commandSerializer = new EmptyCommandSerializer();
 
 	@Override
 	public int getApplyIdx() {
@@ -19,6 +22,11 @@ public class EmptyDataStorage extends VersionDataStorage {
 	@Override
 	public byte[] getSnapshotData() {
 		return new byte[0];
+	}
+
+	@Override
+	public CommandSerializer<String> getCommandSerializer() {
+		return commandSerializer;
 	}
 
 	@Override
