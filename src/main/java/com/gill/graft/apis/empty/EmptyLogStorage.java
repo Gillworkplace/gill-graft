@@ -14,6 +14,8 @@ import com.gill.graft.model.LogEntry;
  **/
 public class EmptyLogStorage implements LogStorage {
 
+	public static final EmptyLogStorage INSTANCE = new EmptyLogStorage();
+
 	@Override
 	public List<LogEntry> loadFromApplyIdx(int n, int applyIdx) {
 		return Collections.emptyList();

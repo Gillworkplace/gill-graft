@@ -9,6 +9,9 @@ import com.gill.graft.apis.CommandSerializer;
  * @version 2023/09/21
  **/
 public class EmptyCommandSerializer implements CommandSerializer<String> {
+
+    public static final EmptyCommandSerializer INSTANCE = new EmptyCommandSerializer();
+
     @Override
     public String serialize(String command) {
         return command;

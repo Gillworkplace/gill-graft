@@ -12,6 +12,8 @@ import com.gill.graft.model.Snapshot;
  **/
 public class EmptyDataStorage extends VersionDataStorage<String> {
 
+	public static final EmptyDataStorage INSTANCE = new EmptyDataStorage();
+
 	private CommandSerializer<String> commandSerializer = new EmptyCommandSerializer();
 
 	@Override

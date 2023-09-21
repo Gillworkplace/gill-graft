@@ -11,6 +11,8 @@ import com.gill.graft.model.PersistentProperties;
  **/
 public class EmptyMetaStorage implements MetaStorage {
 
+	public static final EmptyMetaStorage INSTANCE = new EmptyMetaStorage();
+
 	@Override
 	public void write(PersistentProperties properties) {
 
