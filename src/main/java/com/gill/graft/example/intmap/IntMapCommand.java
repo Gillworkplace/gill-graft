@@ -64,6 +64,18 @@ public class IntMapCommand {
 		return value;
 	}
 
+	public void setType(Type type) {
+		this.type = type;
+	}
+
+	public void setKey(String key) {
+		this.key = key;
+	}
+
+	public void setValue(Integer value) {
+		this.value = value;
+	}
+
 	public IntMapCommand(Type type, String key) {
 		this.type = type;
 		this.key = key;

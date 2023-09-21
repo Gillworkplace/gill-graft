@@ -1,6 +1,11 @@
 package com.gill.graft;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * TestUtils
@@ -11,11 +16,20 @@ import java.lang.reflect.Field;
 public class TestUtils {
 
 	public static <T> T getField(Object target, String fieldName) {
-		Field field = null;
 		try {
-			field = target.getClass().getDeclaredField(fieldName);
-			field.setAccessible(true);
-			return (T) field.get(target);
+			List<Field> fields = new ArrayList<>();
+			Class<?> clazz = target.getClass();
+			while (clazz != Object.class) {
+				fields.addAll(Arrays.stream(clazz.getDeclaredFields()).collect(Collectors.toList()));
+				clazz = clazz.getSuperclass();
+			}
+			for (Field field : fields) {
+				if (fieldName.equals(field.getName())) {
+					field.setAccessible(true);
+					return (T) field.get(target);
+				}
+			}
+			throw new NoSuchFieldException();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
