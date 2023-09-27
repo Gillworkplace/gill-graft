@@ -29,4 +29,12 @@ public abstract class BaseParam {
 	public String toString() {
 		return "BaseParam{" + "nodeId=" + nodeId + ", term=" + term + '}';
 	}
+
+	public void setNodeId(int nodeId) {
+		this.nodeId = nodeId;
+	}
+
+	public void setTerm(long term) {
+		this.term = term;
+	}
 }

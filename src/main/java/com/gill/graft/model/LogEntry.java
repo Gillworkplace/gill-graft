@@ -8,11 +8,11 @@ package com.gill.graft.model;
  **/
 public class LogEntry {
 
-	private final int index;
+	private int index;
 
-	private final long term;
+	private long term;
 
-	private final String command;
+	private String command;
 
 	public int getIndex() {
 		return index;
@@ -24,6 +24,18 @@ public class LogEntry {
 
 	public String getCommand() {
 		return command;
+	}
+
+	public void setIndex(int index) {
+		this.index = index;
+	}
+
+	public void setTerm(long term) {
+		this.term = term;
+	}
+
+	public void setCommand(String command) {
+		this.command = command;
 	}
 
 	public LogEntry(int index, long term, String command) {

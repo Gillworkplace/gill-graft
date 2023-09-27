@@ -48,4 +48,20 @@ public class AppendLogEntriesParam extends BaseParam {
 	public List<LogEntry> getLogs() {
 		return logs;
 	}
+
+	public void setPreLogTerm(long preLogTerm) {
+		this.preLogTerm = preLogTerm;
+	}
+
+	public void setPreLogIdx(int preLogIdx) {
+		this.preLogIdx = preLogIdx;
+	}
+
+	public void setCommitIdx(int commitIdx) {
+		this.commitIdx = commitIdx;
+	}
+
+	public void setLogs(List<LogEntry> logs) {
+		this.logs = logs;
+	}
 }

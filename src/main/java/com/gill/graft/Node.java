@@ -11,6 +11,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import com.gill.graft.scheduler.SnapshotScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -454,6 +455,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		this.followers = nodes.stream().filter(node -> this.id != node.getId()).collect(Collectors.toList());
 		loadData();
 		this.publishEvent(RaftEvent.INIT, new RaftEventParams(getTerm(), true));
+		SnapshotScheduler.start(dataStorage, config);
 	}
 
 	private void calcPriority(Integer priority) {
@@ -472,6 +474,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	@Override
 	public synchronized void stop() {
+		SnapshotScheduler.stop();
 		this.publishEvent(RaftEvent.STOP, new RaftEventParams(Integer.MAX_VALUE, true));
 		this.machine.stop();
 	}

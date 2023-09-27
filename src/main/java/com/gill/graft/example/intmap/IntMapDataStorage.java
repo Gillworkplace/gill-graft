@@ -1,8 +1,8 @@
 package com.gill.graft.example.intmap;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ public class IntMapDataStorage extends VersionDataStorage<IntMapCommand> {
 
 	private static final Logger log = LoggerFactory.getLogger(IntMapDataStorage.class);
 
-	private Map<String, Integer> map = new HashMap<>(1024);
+	private Map<String, Integer> map = new ConcurrentHashMap<>(1024);
 
 	private final IntMapCommandSerializer serializer = new IntMapCommandSerializer();
 
@@ -46,7 +46,7 @@ public class IntMapDataStorage extends VersionDataStorage<IntMapCommand> {
 
 	@Override
 	public int loadSnapshot() {
-		map = new HashMap<>(1024);
+		map = new ConcurrentHashMap<>(1024);
 		return 0;
 	}
 

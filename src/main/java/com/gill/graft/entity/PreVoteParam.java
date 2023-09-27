@@ -8,9 +8,9 @@ package com.gill.graft.entity;
  **/
 public class PreVoteParam extends BaseParam {
 
-	private final long lastLogTerm;
+	private long lastLogTerm;
 
-	private final int lastLogIdx;
+	private int lastLogIdx;
 
 	public PreVoteParam(int nodeId, long term, long lastLogTerm, int lastLogIdx) {
 		super(nodeId, term);
@@ -29,5 +29,13 @@ public class PreVoteParam extends BaseParam {
 	@Override
 	public String toString() {
 		return "PreVoteParam{" + super.toString() + "lastLogTerm=" + lastLogTerm + ", lastLogIdx=" + lastLogIdx + '}';
+	}
+
+	public void setLastLogTerm(long lastLogTerm) {
+		this.lastLogTerm = lastLogTerm;
+	}
+
+	public void setLastLogIdx(int lastLogIdx) {
+		this.lastLogIdx = lastLogIdx;
 	}
 }

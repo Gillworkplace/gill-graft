@@ -40,4 +40,12 @@ public class AppendLogReply extends Reply {
 		return "AppendLogReply{" + super.toString() + "syncSnapshot=" + syncSnapshot + ", compareIdx=" + compareIdx
 				+ '}';
 	}
+
+	public void setSyncSnapshot(boolean syncSnapshot) {
+		this.syncSnapshot = syncSnapshot;
+	}
+
+	public void setCompareIdx(int compareIdx) {
+		this.compareIdx = compareIdx;
+	}
 }

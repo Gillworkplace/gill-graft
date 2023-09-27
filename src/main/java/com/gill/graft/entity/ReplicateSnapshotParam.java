@@ -10,11 +10,11 @@ import java.util.Arrays;
  **/
 public class ReplicateSnapshotParam extends BaseParam {
 
-	private final int applyIdx;
+	private int applyIdx;
 
-	private final long applyTerm;
+	private long applyTerm;
 
-	private final byte[] data;
+	private byte[] data;
 
 	public ReplicateSnapshotParam(int nodeId, long term, int applyIdx, long applyTerm, byte[] data) {
 		super(nodeId, term);
@@ -39,5 +39,17 @@ public class ReplicateSnapshotParam extends BaseParam {
 	public String toString() {
 		return "ReplicateSnapshotParam{" + super.toString() + "applyIdx=" + applyIdx + ", applyTerm=" + applyTerm
 				+ ", data=" + Arrays.toString(data) + '}';
+	}
+
+	public void setApplyIdx(int applyIdx) {
+		this.applyIdx = applyIdx;
+	}
+
+	public void setApplyTerm(long applyTerm) {
+		this.applyTerm = applyTerm;
+	}
+
+	public void setData(byte[] data) {
+		this.data = data;
 	}
 }

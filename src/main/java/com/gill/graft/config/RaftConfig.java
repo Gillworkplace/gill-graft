@@ -18,6 +18,8 @@ public class RaftConfig {
 
 	private int repairLength = 100;
 
+	private long snapshotPersistedInterval = 5L * 60 * 1000;
+
 	private LogConfig logConfig = new LogConfig();
 
 	public long getHeartbeatInterval() {
@@ -58,6 +60,14 @@ public class RaftConfig {
 
 	public void setRepairLength(int repairLength) {
 		this.repairLength = repairLength;
+	}
+
+	public long getSnapshotPersistedInterval() {
+		return snapshotPersistedInterval;
+	}
+
+	public void setSnapshotPersistedInterval(long snapshotPersistedInterval) {
+		this.snapshotPersistedInterval = snapshotPersistedInterval;
 	}
 
 	public LogConfig getLogConfig() {

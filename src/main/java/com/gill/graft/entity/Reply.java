@@ -8,9 +8,9 @@ package com.gill.graft.entity;
  **/
 public class Reply {
 
-	private final boolean success;
+	private boolean success;
 
-	private final long term;
+	private long term;
 
 	public Reply(boolean success, long term) {
 		this.success = success;
@@ -28,5 +28,13 @@ public class Reply {
 	@Override
 	public String toString() {
 		return "Reply{" + "success=" + success + ", term=" + term + '}';
+	}
+
+	public void setSuccess(boolean success) {
+		this.success = success;
+	}
+
+	public void setTerm(long term) {
+		this.term = term;
 	}
 }
