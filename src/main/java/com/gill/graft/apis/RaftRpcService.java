@@ -57,4 +57,11 @@ public interface RaftRpcService {
 	 * @return 响应
 	 */
 	Reply replicateSnapshot(ReplicateSnapshotParam param);
+
+	/**
+	 * toString
+	 * 
+	 * @return toString
+	 */
+	String toString();
 }

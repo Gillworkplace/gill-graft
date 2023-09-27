@@ -25,7 +25,7 @@ public interface NodeService {
 	 * @param nodes
 	 *            集群节点
 	 */
-	void start(List<? extends RaftRpcService> nodes);
+	void start(List<RaftRpcService> nodes);
 
 	/**
 	 * 停止节点

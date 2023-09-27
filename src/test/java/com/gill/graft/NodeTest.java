@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import com.gill.graft.apis.RaftRpcService;
 import com.gill.graft.mock.MockNode;
 import com.gill.graft.model.LogEntry;
 
@@ -28,10 +29,14 @@ import cn.hutool.json.JSONUtil;
  **/
 public class NodeTest extends BaseTest {
 
+	private List<RaftRpcService> getFollowers(List<MockNode> nodes, Node self) {
+		return nodes.stream().filter(rpcNode -> self.getId() != rpcNode.getId()).collect(Collectors.toList());
+	}
+
 	private List<MockNode> nodesInit(int num, long waitTime) {
 		List<MockNode> nodes = init(num);
 		for (MockNode node : nodes) {
-			node.start(nodes);
+			node.start(getFollowers(nodes, node));
 		}
 		sleep(waitTime);
 		assertCluster(nodes);
@@ -45,10 +50,11 @@ public class NodeTest extends BaseTest {
 	private List<MockNode> nodesInitUntilStable(int num, Integer defaultPriority) {
 		List<MockNode> nodes = init(num);
 		for (MockNode node : nodes) {
+			List<RaftRpcService> followers = getFollowers(nodes, node);
 			if (defaultPriority == null) {
-				node.start(nodes);
+				node.start(followers);
 			} else {
-				node.start(nodes, defaultPriority);
+				node.start(followers, defaultPriority);
 			}
 		}
 		waitUtilStable(nodes);
@@ -258,7 +264,7 @@ public class NodeTest extends BaseTest {
 		follower.stop();
 		System.out.println("============ FOLLOWER STOPPED =============");
 		leader.propose("2");
-		follower.start(nodes);
+		follower.start(getFollowers(nodes, follower));
 		System.out.println("============ FOLLOWER STARTED =============");
 		leader.propose("3");
 		assertAllLogs(nodes);
@@ -279,11 +285,11 @@ public class NodeTest extends BaseTest {
 		originLeader.propose("1");
 		originLeader.stop();
 		System.out.println("============ LEADER STOPPED =============");
-		follower.start(nodes);
+		follower.start(getFollowers(nodes, follower));
 		waitUtilStable(nodes);
 		MockNode newLeader = findLeader(nodes);
 		System.out.println("============ FIND NEW LEADER =============");
-		originLeader.start(nodes);
+		originLeader.start(getFollowers(nodes, originLeader));
 		System.out.println("============ ORIGIN LEADER STARTED =============");
 		Assertions.assertEquals(4, (int) newLeader.propose("2").getIdx());
 		Assertions.assertEquals(-1, originLeader.propose("123").getIdx());

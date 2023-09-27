@@ -29,11 +29,11 @@ public class IntMapServer {
 	/**
 	 * 启动
 	 * 
-	 * @param nodes
+	 * @param followers
 	 *            节点
 	 */
-	public void start(List<? extends RaftRpcService> nodes) {
-		node.start(nodes);
+	public void start(List<RaftRpcService> followers) {
+		node.start(followers);
 	}
 
 	/**

@@ -93,8 +93,6 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	 */
 	private List<RaftRpcService> followers = Collections.emptyList();
 
-	private List<RaftRpcService> nodes = Collections.emptyList();
-
 	public Node() {
 		id = RandomUtil.randomInt(100, 200);
 		metaDataManager = new MetaDataManager(new EmptyMetaStorage());
@@ -444,15 +442,14 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	}
 
 	@Override
-	public synchronized void start(List<? extends RaftRpcService> nodes) {
-		start(nodes, null);
+	public synchronized void start(List<RaftRpcService> followers) {
+		start(followers, null);
 	}
 
-	public synchronized void start(List<? extends RaftRpcService> nodes, Integer priority) {
+	public synchronized void start(List<RaftRpcService> followers, Integer priority) {
 		this.machine.start();
-		this.nodes = new ArrayList<>(nodes);
 		calcPriority(priority);
-		this.followers = nodes.stream().filter(node -> this.id != node.getId()).collect(Collectors.toList());
+		this.followers = followers;
 		loadData();
 		this.publishEvent(RaftEvent.INIT, new RaftEventParams(getTerm(), true));
 		SnapshotScheduler.start(dataStorage, config);
@@ -463,13 +460,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 			this.priority = priority;
 			return;
 		}
-		List<RaftRpcService> sort = this.nodes.stream().sorted(Comparator.comparingInt(RaftRpcService::getId))
-				.collect(Collectors.toList());
-		for (int i = 0; i < sort.size(); i++) {
-			if (sort.get(i).getId() == id) {
-				this.priority = i;
-			}
-		}
+		this.priority = RandomUtil.randomInt(10);
 	}
 
 	@Override
@@ -517,7 +508,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		sb.append("persistent properties: ").append(metaDataManager.println()).append(System.lineSeparator());
 		sb.append("committed idx: ").append(getCommittedIdx()).append(System.lineSeparator());
 		sb.append("heartbeat state: ").append(heartbeatState).append(System.lineSeparator());
-		sb.append("nodes: ").append(nodes).append(System.lineSeparator());
+		sb.append("self: ").append(this).append(System.lineSeparator());
 		sb.append("followers: ").append(followers).append(System.lineSeparator());
 		sb.append("===================").append(System.lineSeparator());
 		sb.append("THREAD POOL").append(System.lineSeparator());
