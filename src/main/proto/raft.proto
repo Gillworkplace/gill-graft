@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package com.gill.graft;
+
+option java_package = "com.gill.graft.proto";
+
+message Request {
+
+  int64 requestId = 1;
+
+  int32 serviceId = 2;
+
+  bytes data = 3;
+}
+
+message Response {
+
+  int64 requestId = 1;
+
+  bytes data = 2;
+}
+
+message BaseParam {
+
+  int32 nodeId = 1;
+
+  int64 term = 2;
+}
+
+message PreVoteParam {
+
+  BaseParam baseParam = 1;
+
+  int64 lastLogTerm = 2;
+
+  int32 lastLogIdx = 3;
+}
+
+message RequestVoteParam {
+
+  BaseParam baseParam = 1;
+
+  int64 lastLogTerm = 2;
+
+  int32 lastLogIdx = 3;
+}
+
+message AppendLogEntriesParam {
+
+  BaseParam baseParam = 1;
+
+  int64 preLogTerm = 2;
+
+  int32 preLogIdx = 3;
+
+  int32 commitIdx = 4;
+
+  message LogEntry {
+
+    int32 index = 1;
+
+    int64 term = 2;
+
+    bytes command = 3;
+  }
+
+  repeated LogEntry logs = 5;
+}
+
+message ReplicateSnapshotParam {
+
+  BaseParam baseParam = 1;
+
+  int32 applyIdx = 2;
+
+  int64 applyTerm = 3;
+
+  bytes data = 4;
+}
+
+message Reply {
+
+  bool success = 1;
+
+  int64 term = 2;
+}
+
+message AppendLogReply {
+
+  Reply reply = 1;
+
+  bool syncSnapshot = 2;
+
+  int32 compareIdx = 3;
+}

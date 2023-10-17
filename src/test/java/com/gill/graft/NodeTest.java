@@ -1,10 +1,7 @@
 package com.gill.graft;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -16,10 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import com.gill.graft.apis.RaftRpcService;
 import com.gill.graft.mock.MockNode;
-import com.gill.graft.model.LogEntry;
 
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.json.JSONUtil;
 
 /**
  * ClusterTest
@@ -54,109 +49,12 @@ public class NodeTest extends BaseTest {
 			if (defaultPriority == null) {
 				node.start(followers);
 			} else {
-				node.start(followers, defaultPriority);
+				node.start(followers, false, defaultPriority);
 			}
 		}
 		waitUtilStable(nodes);
 		assertCluster(nodes);
 		return nodes;
-	}
-
-	private static void assertCluster(List<MockNode> nodes) {
-		int leaderCnt = 0;
-		int followerCnt = 0;
-		int availableCnt = 0;
-		for (MockNode node : nodes) {
-			if (node.isLeader()) {
-				leaderCnt++;
-			}
-			if (node.isFollower()) {
-				followerCnt++;
-			}
-			if (node.isUp()) {
-				availableCnt++;
-			}
-		}
-		try {
-			Assertions.assertEquals(1, leaderCnt, "leader 数目异常");
-			Assertions.assertEquals(availableCnt - 1, followerCnt, "follower 数目异常");
-		} catch (Throwable e) {
-			System.out.println("============ AFTER EXCEPTION ===============");
-			stopNodes(nodes);
-			throw e;
-		}
-	}
-
-	private static void assertLogs(List<MockNode> nodes) {
-		Optional<MockNode> leaderOpt = nodes.stream().filter(MockNode::isLeader).findFirst();
-		if (!leaderOpt.isPresent()) {
-			Assertions.fail("not find leader");
-		}
-		MockNode leader = leaderOpt.get();
-		List<LogEntry> logs = leader.getLog();
-		String expected = JSONUtil.toJsonStr(logs);
-		int cnt = 0;
-		try {
-			for (MockNode node : nodes) {
-				if (expected.equals(JSONUtil.toJsonStr(node.getLog()))) {
-					cnt++;
-				}
-			}
-			Assertions.assertTrue(cnt > nodes.size() / 2);
-		} catch (Throwable e) {
-			System.out.println("============ AFTER EXCEPTION ===============");
-			stopNodes(nodes);
-			throw e;
-		}
-	}
-
-	private static void assertAllLogs(List<MockNode> nodes, MockNode... excludeNodes) {
-		Optional<MockNode> leaderOpt = nodes.stream().filter(MockNode::isLeader).findFirst();
-		if (!leaderOpt.isPresent()) {
-			Assertions.fail("not find leader");
-		}
-		MockNode leader = leaderOpt.get();
-		List<LogEntry> logs = leader.getLog();
-		String expected = JSONUtil.toJsonStr(logs);
-		Set<Integer> excludeSet = Arrays.stream(excludeNodes).map(Node::getId).collect(Collectors.toSet());
-		try {
-			for (MockNode node : nodes) {
-				if (excludeSet.contains(node.getId())) {
-					continue;
-				}
-				Assertions.assertEquals(expected, JSONUtil.toJsonStr(node.getLog()));
-			}
-		} catch (Throwable e) {
-			System.out.println("============ AFTER EXCEPTION ===============");
-			stopNodes(nodes);
-			throw e;
-		}
-	}
-
-	private static void waitUtilStable(List<MockNode> nodes) {
-		while (true) {
-			Optional<MockNode> leader = nodes.stream().filter(MockNode::isLeader).findFirst();
-			if (leader.isPresent() && leader.get().isStable()) {
-				break;
-			}
-			sleep(10);
-		}
-	}
-
-	private static MockNode findLeader(List<MockNode> nodes) {
-		Optional<MockNode> leaderOpt = nodes.stream().filter(MockNode::isLeader).findFirst();
-		if (!leaderOpt.isPresent()) {
-			Assertions.fail("not find leader");
-		}
-		return leaderOpt.get();
-	}
-
-	private static MockNode findFollower(List<MockNode> nodes) {
-		Optional<MockNode> followerOpt = nodes.stream().filter(MockNode::isFollower).findFirst();
-		if (!followerOpt.isPresent()) {
-			Assertions.fail("not find follower");
-		}
-		return followerOpt.get();
 	}
 
 	private List<MockNode> init(int num) {
@@ -167,12 +65,6 @@ public class NodeTest extends BaseTest {
 		}
 		System.out.println("offset: " + offset);
 		return nodes;
-	}
-
-	private static void stopNodes(List<MockNode> nodes) {
-		for (MockNode node : nodes) {
-			node.stop();
-		}
 	}
 
 	@Test

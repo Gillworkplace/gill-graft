@@ -1,8 +1,13 @@
 package com.gill.graft.entity;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.gill.graft.model.LogEntry;
+import com.gill.graft.proto.Raft;
+import com.gill.graft.proto.RaftConverter;
+import com.google.protobuf.ByteString;
 
 /**
  * AppendLogEntriesParam
@@ -31,6 +36,45 @@ public class AppendLogEntriesParam extends BaseParam {
 		this.preLogIdx = preLogIdx;
 		this.commitIdx = commitIdx;
 		this.logs = logs;
+	}
+
+	/**
+	 * encode
+	 *
+	 * @return ret
+	 */
+	public byte[] encode() {
+		Raft.BaseParam baseParam = RaftConverter.buildReply(this);
+		Raft.AppendLogEntriesParam.Builder builder = Raft.AppendLogEntriesParam.newBuilder().setBaseParam(baseParam)
+				.setPreLogIdx(preLogIdx).setPreLogTerm(preLogTerm).setCommitIdx(commitIdx);
+		if (logs != null) {
+			for (LogEntry logEntry : logs) {
+				builder.addLogs(Raft.AppendLogEntriesParam.LogEntry.newBuilder().setIndex(logEntry.getIndex())
+						.setTerm(logEntry.getTerm())
+						.setCommand(ByteString.copyFrom(logEntry.getCommand().getBytes(StandardCharsets.UTF_8))));
+			}
+		}
+		Raft.AppendLogEntriesParam rpcParam = builder.build();
+		return rpcParam.toByteArray();
+	}
+
+	/**
+	 * decoder
+	 *
+	 * @param bytes
+	 *            bytes
+	 * @return ret
+	 */
+	public static AppendLogEntriesParam decode(byte[] bytes) {
+		Raft.AppendLogEntriesParam param = RaftConverter.parseFrom(bytes, Raft.AppendLogEntriesParam::parseFrom,
+				"AppendLogEntriesParam");
+		if (param == null) {
+			return null;
+		}
+		Raft.BaseParam baseParam = param.getBaseParam();
+		List<LogEntry> logEntries = param.getLogsList().stream().map(LogEntry::fromProto).collect(Collectors.toList());
+		return new AppendLogEntriesParam(baseParam.getNodeId(), baseParam.getTerm(), param.getPreLogTerm(),
+				param.getPreLogIdx(), param.getCommitIdx(), logEntries);
 	}
 
 	public long getPreLogTerm() {

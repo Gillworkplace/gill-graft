@@ -64,4 +64,9 @@ public interface RaftRpcService {
 	 * @return toString
 	 */
 	String toString();
+
+	/**
+	 * 关闭资源
+	 */
+	void shutdown();
 }

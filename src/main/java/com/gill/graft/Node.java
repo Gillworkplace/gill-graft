@@ -1,17 +1,13 @@
 package com.gill.graft;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
-import com.gill.graft.scheduler.SnapshotScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,15 +33,20 @@ import com.gill.graft.machine.RaftState;
 import com.gill.graft.model.LogEntry;
 import com.gill.graft.model.PersistentProperties;
 import com.gill.graft.model.ProposeReply;
+import com.gill.graft.proto.RaftConverter;
+import com.gill.graft.rpc.ServiceRegistry;
+import com.gill.graft.rpc.server.NettyServer;
+import com.gill.graft.scheduler.SnapshotScheduler;
 import com.gill.graft.service.InnerNodeService;
 import com.gill.graft.service.PrintService;
 import com.gill.graft.service.RaftService;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.RandomUtil;
 import javafx.util.Pair;
 
 /**
- * Node
+ * Node single
  *
  * @author gill
  * @version 2023/08/02
@@ -88,6 +89,18 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	private final transient ProposeHelper proposeHelper = new ProposeHelper(threadPools::getApiPool);
 
+	private final ServiceRegistry serviceRegistry = new ServiceRegistry();
+
+	{
+		serviceRegistry.register(1, bytes -> RaftConverter.intEncode(getId()));
+		serviceRegistry.register(2, bytes -> preVote(PreVoteParam.decode(bytes)).encode());
+		serviceRegistry.register(3, bytes -> requestVote(RequestVoteParam.decode(bytes)).encode());
+		serviceRegistry.register(4, bytes -> appendLogEntries(AppendLogEntriesParam.decode(bytes)).encode());
+		serviceRegistry.register(5, bytes -> replicateSnapshot(ReplicateSnapshotParam.decode(bytes)).encode());
+	}
+
+	private final NettyServer server = new NettyServer(this);
+
 	/**
 	 * 集群属性
 	 */
@@ -123,6 +136,10 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	public long getTerm() {
 		return this.metaDataManager.getTerm();
+	}
+
+	public ServiceRegistry getServiceRegistry() {
+		return serviceRegistry;
 	}
 
 	/**
@@ -443,16 +460,32 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	@Override
 	public synchronized void start(List<RaftRpcService> followers) {
-		start(followers, null);
+		start(followers, false,null);
 	}
 
-	public synchronized void start(List<RaftRpcService> followers, Integer priority) {
+	public synchronized void start(List<RaftRpcService> followers, boolean useDefaultServer) {
+		start(followers, useDefaultServer, null);
+	}
+
+	public synchronized void start(List<RaftRpcService> followers, boolean useDefaultServer, Integer priority) {
+		if(useDefaultServer) {
+			server.start(config.getPort());
+		}
 		this.machine.start();
 		calcPriority(priority);
+		releaseOldFollowers();
 		this.followers = followers;
 		loadData();
 		this.publishEvent(RaftEvent.INIT, new RaftEventParams(getTerm(), true));
 		SnapshotScheduler.start(dataStorage, config);
+	}
+
+	private void releaseOldFollowers() {
+
+		// 释放资源
+		if (!CollectionUtil.isEmpty(followers)) {
+			this.followers.parallelStream().forEach(RaftRpcService::shutdown);
+		}
 	}
 
 	private void calcPriority(Integer priority) {
@@ -468,6 +501,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		SnapshotScheduler.stop();
 		this.publishEvent(RaftEvent.STOP, new RaftEventParams(Integer.MAX_VALUE, true));
 		this.machine.stop();
+		releaseOldFollowers();
 	}
 
 	@Override

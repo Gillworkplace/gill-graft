@@ -1,5 +1,8 @@
 package com.gill.graft.entity;
 
+import com.gill.graft.proto.Raft;
+import com.gill.graft.proto.RaftConverter;
+
 /**
  * Reply
  *
@@ -15,6 +18,34 @@ public class Reply {
 	public Reply(boolean success, long term) {
 		this.success = success;
 		this.term = term;
+	}
+
+	/**
+	 * encode
+	 *
+	 * @return ret
+	 */
+	public byte[] encode() {
+		Raft.Reply reply = Raft.Reply.newBuilder().setSuccess(success).setTerm(term).build();
+		return reply.toByteArray();
+	}
+
+	/**
+	 * decoder
+	 *
+	 * @param bytes
+	 *            bytes
+	 * @return ret
+	 */
+	public static Reply decode(byte[] bytes) {
+		if(bytes == null || bytes.length == 0) {
+			return new Reply(false, -1);
+		}
+		Raft.Reply reply = RaftConverter.parseFrom(bytes, Raft.Reply::parseFrom, "Reply");
+		if (reply == null) {
+			return new Reply(false, -1);
+		}
+		return new Reply(reply.getSuccess(), reply.getTerm());
 	}
 
 	public boolean isSuccess() {

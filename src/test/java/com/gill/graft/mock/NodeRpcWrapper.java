@@ -47,4 +47,12 @@ public class NodeRpcWrapper implements RaftRpcService {
 	public Reply replicateSnapshot(ReplicateSnapshotParam param) {
 		return node.replicateSnapshot(param);
 	}
+
+	/**
+	 * 关闭资源
+	 */
+	@Override
+	public void shutdown() {
+
+	}
 }

@@ -49,9 +49,29 @@ public class MockIntMapServer extends IntMapServer implements TestMethod {
 		map.clear();
 	}
 
+	/**
+	 * id
+	 *
+	 * @return id
+	 */
+	@Override
+	public int getId() {
+		return getNode().getId();
+	}
+
 	@Override
 	public boolean isUp() {
 		return getRaftMachine().getState() != RaftState.STRANGER;
+	}
+
+	/**
+	 * 是否稳定
+	 *
+	 * @return ret
+	 */
+	@Override
+	public boolean isStable() {
+		return getNode().isStable();
 	}
 
 	@Override

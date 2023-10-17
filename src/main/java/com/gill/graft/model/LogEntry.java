@@ -1,5 +1,10 @@
 package com.gill.graft.model;
 
+import java.nio.charset.StandardCharsets;
+
+import com.gill.graft.proto.Raft;
+import com.google.protobuf.ByteString;
+
 /**
  * LogEntity
  *
@@ -13,6 +18,16 @@ public class LogEntry {
 	private long term;
 
 	private String command;
+
+	public Raft.AppendLogEntriesParam.LogEntry toProto() {
+		return Raft.AppendLogEntriesParam.LogEntry.newBuilder().setIndex(index).setTerm(term)
+				.setCommand(ByteString.copyFrom(command, StandardCharsets.UTF_8)).build();
+	}
+
+	public static LogEntry fromProto(Raft.AppendLogEntriesParam.LogEntry logEntry) {
+		return new LogEntry(logEntry.getIndex(), logEntry.getTerm(),
+				logEntry.getCommand().toString(StandardCharsets.UTF_8));
+	}
 
 	public int getIndex() {
 		return index;

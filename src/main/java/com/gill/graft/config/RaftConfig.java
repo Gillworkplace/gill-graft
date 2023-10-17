@@ -8,6 +8,10 @@ package com.gill.graft.config;
  **/
 public class RaftConfig {
 
+	private int port = 8160;
+
+	private long connectTimeout = 5 * 1000L;
+
 	private long heartbeatInterval = 100L;
 
 	private long baseTimeoutInterval = 300L;
@@ -21,6 +25,22 @@ public class RaftConfig {
 	private long snapshotPersistedInterval = 5L * 60 * 1000;
 
 	private LogConfig logConfig = new LogConfig();
+
+	public int getPort() {
+		return port;
+	}
+
+	public void setPort(int port) {
+		this.port = port;
+	}
+
+	public long getConnectTimeout() {
+		return connectTimeout;
+	}
+
+	public void setConnectTimeout(long connectTimeout) {
+		this.connectTimeout = connectTimeout;
+	}
 
 	public long getHeartbeatInterval() {
 		return heartbeatInterval;

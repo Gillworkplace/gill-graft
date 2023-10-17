@@ -1,5 +1,8 @@
 package com.gill.graft.entity;
 
+import com.gill.graft.proto.Raft;
+import com.gill.graft.proto.RaftConverter;
+
 /**
  * PreVoteParam
  *
@@ -16,6 +19,35 @@ public class PreVoteParam extends BaseParam {
 		super(nodeId, term);
 		this.lastLogTerm = lastLogTerm;
 		this.lastLogIdx = lastLogIdx;
+	}
+
+	/**
+	 * encode
+	 * 
+	 * @return ret
+	 */
+	public byte[] encode() {
+		Raft.BaseParam baseParam = RaftConverter.buildReply(this);
+		Raft.PreVoteParam rpcParam = Raft.PreVoteParam.newBuilder().setBaseParam(baseParam).setLastLogTerm(lastLogTerm)
+				.setLastLogIdx(lastLogIdx).build();
+		return rpcParam.toByteArray();
+	}
+
+	/**
+	 * decoder
+	 * 
+	 * @param bytes
+	 *            bytes
+	 * @return ret
+	 */
+	public static PreVoteParam decode(byte[] bytes) {
+		Raft.PreVoteParam param = RaftConverter.parseFrom(bytes, Raft.PreVoteParam::parseFrom, "PreVoteParam");
+		if (param == null) {
+			return null;
+		}
+		Raft.BaseParam baseParam = param.getBaseParam();
+		return new PreVoteParam(baseParam.getNodeId(), baseParam.getTerm(), param.getLastLogTerm(),
+				param.getLastLogIdx());
 	}
 
 	public long getLastLogTerm() {

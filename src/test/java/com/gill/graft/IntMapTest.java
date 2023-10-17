@@ -33,60 +33,9 @@ public class IntMapTest extends BaseTest {
 		return servers;
 	}
 
-	private static MockIntMapServer findLeader(List<MockIntMapServer> servers) {
-		Optional<MockIntMapServer> leaderOpt = servers.stream().filter(MockIntMapServer::isLeader).findFirst();
-		if (!leaderOpt.isPresent()) {
-			Assertions.fail("not find leader");
-		}
-		return leaderOpt.get();
-	}
-
-	private static MockIntMapServer findFollower(List<MockIntMapServer> servers) {
-		Optional<MockIntMapServer> followerOpt = servers.stream().filter(MockIntMapServer::isFollower).findFirst();
-		if (!followerOpt.isPresent()) {
-			Assertions.fail("not find follower");
-		}
-		return followerOpt.get();
-	}
-
-	private static void waitUtilStable(List<MockIntMapServer> servers) {
-		while (true) {
-			Optional<MockIntMapServer> leader = servers.stream().filter(MockIntMapServer::isLeader).findFirst();
-			if (leader.isPresent() && leader.get().getNode().isStable()) {
-				break;
-			}
-			sleep(10);
-		}
-	}
-
 	private static void stopServers(List<MockIntMapServer> servers) {
 		for (MockIntMapServer server : servers) {
 			server.stop();
-		}
-	}
-
-	private static void assertCluster(List<MockIntMapServer> servers) {
-		int leaderCnt = 0;
-		int followerCnt = 0;
-		int availableCnt = 0;
-		for (MockIntMapServer server : servers) {
-			if (server.isLeader()) {
-				leaderCnt++;
-			}
-			if (server.isFollower()) {
-				followerCnt++;
-			}
-			if (server.isUp()) {
-				availableCnt++;
-			}
-		}
-		try {
-			Assertions.assertEquals(1, leaderCnt, "leader 数目异常");
-			Assertions.assertEquals(availableCnt - 1, followerCnt, "follower 数目异常");
-		} catch (Throwable e) {
-			System.out.println("============ AFTER EXCEPTION ===============");
-			stopServers(servers);
-			throw e;
 		}
 	}
 

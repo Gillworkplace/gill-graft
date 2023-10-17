@@ -1,5 +1,8 @@
 package com.gill.graft.entity;
 
+import com.gill.graft.proto.Raft;
+import com.gill.graft.proto.RaftConverter;
+
 /**
  * AppendLogReply
  *
@@ -25,6 +28,38 @@ public class AppendLogReply extends Reply {
 		super(success, term);
 		this.syncSnapshot = syncSnapshot;
 		this.compareIdx = compareIdx;
+	}
+
+	/**
+	 * encode
+	 *
+	 * @return ret
+	 */
+	public byte[] encode() {
+		Raft.Reply baseReply = RaftConverter.buildReply(this);
+		Raft.AppendLogReply reply = Raft.AppendLogReply.newBuilder().setReply(baseReply).setSyncSnapshot(syncSnapshot)
+				.setCompareIdx(compareIdx).build();
+		return reply.toByteArray();
+	}
+
+	/**
+	 * decoder
+	 *
+	 * @param bytes
+	 *            bytes
+	 * @return ret
+	 */
+	public static AppendLogReply decode(byte[] bytes) {
+		if(bytes == null || bytes.length == 0) {
+			return new AppendLogReply(false, -1);
+		}
+		Raft.AppendLogReply reply = RaftConverter.parseFrom(bytes, Raft.AppendLogReply::parseFrom, "AppendLogReply");
+		if (reply == null) {
+			return new AppendLogReply(false, -1);
+		}
+		Raft.Reply baseReply = reply.getReply();
+		return new AppendLogReply(baseReply.getSuccess(), baseReply.getTerm(), reply.getSyncSnapshot(),
+				reply.getCompareIdx());
 	}
 
 	public boolean isSyncSnapshot() {

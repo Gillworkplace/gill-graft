@@ -1,5 +1,8 @@
 package com.gill.graft.entity;
 
+import com.gill.graft.proto.Raft;
+import com.gill.graft.proto.RaftConverter;
+
 /**
  * RequestVoteParam
  *
@@ -16,6 +19,36 @@ public class RequestVoteParam extends BaseParam {
 		super(nodeId, term);
 		this.lastLogTerm = lastLogTerm;
 		this.lastLogIdx = lastLogIdx;
+	}
+
+	/**
+	 * encode
+	 *
+	 * @return ret
+	 */
+	public byte[] encode() {
+		Raft.BaseParam baseParam = RaftConverter.buildReply(this);
+		Raft.RequestVoteParam rpcParam = Raft.RequestVoteParam.newBuilder().setBaseParam(baseParam)
+				.setLastLogTerm(lastLogTerm).setLastLogIdx(lastLogIdx).build();
+		return rpcParam.toByteArray();
+	}
+
+	/**
+	 * decoder
+	 *
+	 * @param bytes
+	 *            bytes
+	 * @return ret
+	 */
+	public static RequestVoteParam decode(byte[] bytes) {
+		Raft.RequestVoteParam param = RaftConverter.parseFrom(bytes, Raft.RequestVoteParam::parseFrom,
+				"RequestVoteParam");
+		if (param == null) {
+			return null;
+		}
+		Raft.BaseParam baseParam = param.getBaseParam();
+		return new RequestVoteParam(baseParam.getNodeId(), baseParam.getTerm(), param.getLastLogTerm(),
+				param.getLastLogIdx());
 	}
 
 	public long getLastLogTerm() {

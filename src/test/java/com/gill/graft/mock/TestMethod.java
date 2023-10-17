@@ -13,11 +13,25 @@ import com.gill.graft.model.LogEntry;
 public interface TestMethod {
 
 	/**
+	 * id
+	 * 
+	 * @return id
+	 */
+	int getId();
+
+	/**
 	 * 是否正在运行
 	 *
 	 * @return up
 	 */
 	boolean isUp();
+
+	/**
+	 * 是否稳定
+	 * 
+	 * @return ret
+	 */
+	boolean isStable();
 
 	/**
 	 * 是否为leader
@@ -39,4 +53,6 @@ public interface TestMethod {
 	 * @return 集合
 	 */
 	List<LogEntry> getLog();
+
+	void stop();
 }
