@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import com.gill.graft.entity.BaseParam;
 import com.gill.graft.entity.Reply;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.sun.istack.internal.Nullable;
 
 /**
  * RaftConverter
@@ -19,9 +18,10 @@ public class RaftConverter {
 	private static final Logger log = LoggerFactory.getLogger(RaftConverter.class);
 
 	/**
-	 * 
-	 * @param integer
-	 * @return
+	 * int encode
+	 *
+	 * @param integer integer
+	 * @return byte[]
 	 */
 	public static byte[] intEncode(int integer) {
 		byte[] bs = new byte[4];
@@ -98,7 +98,6 @@ public class RaftConverter {
 	 * @param <T>
 	 *            T
 	 */
-	@Nullable
 	public static <T> T parseFrom(byte[] retB, RaftConverter.ProtocolBufferParser<T> parser, String method) {
 		try {
 			return parser.parseFrom(retB);
