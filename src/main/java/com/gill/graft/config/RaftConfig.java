@@ -12,6 +12,8 @@ public class RaftConfig {
 
 	private long connectTimeout = 5 * 1000L;
 
+	private long requestTimeout = 30 * 1000L;
+
 	private long heartbeatInterval = 100L;
 
 	private long baseTimeoutInterval = 300L;
@@ -40,6 +42,14 @@ public class RaftConfig {
 
 	public void setConnectTimeout(long connectTimeout) {
 		this.connectTimeout = connectTimeout;
+	}
+
+	public long getRequestTimeout() {
+		return requestTimeout;
+	}
+
+	public void setRequestTimeout(long requestTimeout) {
+		this.requestTimeout = requestTimeout;
 	}
 
 	public long getHeartbeatInterval() {
