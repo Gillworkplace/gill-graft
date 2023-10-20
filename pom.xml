@@ -41,6 +41,16 @@
             <artifactId>protobuf-java</artifactId>
             <version>3.24.3</version>
         </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>4.2.21</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-jmx</artifactId>
+            <version>4.2.21</version>
+        </dependency>
 
         <!--  TEST  -->
         <dependency>

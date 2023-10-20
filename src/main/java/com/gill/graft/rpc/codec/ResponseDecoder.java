@@ -13,11 +13,11 @@ import io.netty.channel.SimpleChannelInboundHandler;
  * @author gill
  * @version 2023/10/17
  **/
-public class ResponseHandler extends SimpleChannelInboundHandler<Raft.Response> {
+public class ResponseDecoder extends SimpleChannelInboundHandler<Raft.Response> {
 
 	private final ConnectionDock dock;
 
-	public ResponseHandler(ConnectionDock dock) {
+	public ResponseDecoder(ConnectionDock dock) {
 		this.dock = dock;
 	}
 

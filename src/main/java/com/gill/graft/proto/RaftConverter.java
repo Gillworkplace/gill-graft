@@ -1,5 +1,6 @@
 package com.gill.graft.proto;
 
+import cn.hutool.core.util.ByteUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +43,7 @@ public class RaftConverter {
 	public static int intDecode(byte[] bytes) {
 		int integer = 0;
 		for (int i = 0; i < 4 && i < bytes.length; i++) {
-			int bits = bytes[i];
-			integer |= bits << Byte.SIZE * i;
+			integer |= (bytes[i] & 0xff) << Byte.SIZE * i;
 		}
 		return integer;
 	}

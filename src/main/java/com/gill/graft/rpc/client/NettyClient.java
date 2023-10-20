@@ -8,17 +8,19 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.gill.graft.rpc.handler.SharableChannelHandler;
+import io.netty.channel.ChannelHandler;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gill.graft.common.Utils;
 import com.gill.graft.config.RaftConfig;
-import com.gill.graft.proto.Raft;
 import com.gill.graft.rpc.ConnectionDock;
 import com.gill.graft.rpc.codec.Request;
-import com.gill.graft.rpc.codec.RequestPreHandler;
+import com.gill.graft.rpc.codec.RequestEncoder;
 import com.gill.graft.rpc.codec.Response;
-import com.gill.graft.rpc.codec.ResponseHandler;
+import com.gill.graft.rpc.codec.ResponseDecoder;
 import com.google.protobuf.Internal;
 
 import io.netty.bootstrap.Bootstrap;
@@ -28,10 +30,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.protobuf.ProtobufDecoder;
-import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
-import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.ssl.SslContext;
 
 /**
@@ -146,7 +145,7 @@ public class NettyClient {
 
 	private void doConnectAndPark() {
 		Bootstrap b = new Bootstrap();
-		NioEventLoopGroup group = new NioEventLoopGroup();
+		NioEventLoopGroup group = new NioEventLoopGroup(0, new DefaultThreadFactory("netty-client"));
 		Channel c = null;
 		try {
 			b.group(group).channel(NioSocketChannel.class).handler(new ClientInitializer(null));
@@ -170,6 +169,10 @@ public class NettyClient {
 
 		private final SslContext sslCtx;
 
+		private final ChannelHandler requestPreHandler = new RequestEncoder(dock);
+
+		private final ChannelHandler responsePreHandler = new ResponseDecoder(dock);
+
 		public ClientInitializer(SslContext sslCtx) {
 			this.sslCtx = sslCtx;
 		}
@@ -182,14 +185,14 @@ public class NettyClient {
 			}
 
 			// out
-			pl.addLast(new ProtobufVarint32LengthFieldPrepender());
-			pl.addLast(new ProtobufEncoder());
-			pl.addLast(new RequestPreHandler(dock));
+			pl.addLast("protobufFrameEncoder", SharableChannelHandler.PROTOBUF_FRAME_ENCODER);
+			pl.addLast("protobufProtocolEncoder", SharableChannelHandler.PROTOBUF_PROTOCOL_ENCODER);
+			pl.addLast("requestPreHandler", requestPreHandler);
 
 			// in
-			pl.addLast(new ProtobufVarint32FrameDecoder());
-			pl.addLast(new ProtobufDecoder(Raft.Response.getDefaultInstance()));
-			pl.addLast(new ResponseHandler(dock));
+			pl.addLast("protobufFrameDecoder", new ProtobufVarint32FrameDecoder());
+			pl.addLast("protobufProtocolDecoder", SharableChannelHandler.PROTOBUF_PROTOCOL_DECODER_RESPONSE);
+			pl.addLast("responsePreHandler", responsePreHandler);
 		}
 	}
 }

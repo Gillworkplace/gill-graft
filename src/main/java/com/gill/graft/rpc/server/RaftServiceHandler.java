@@ -6,6 +6,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import io.netty.channel.ChannelHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,33 +25,32 @@ import io.netty.channel.SimpleChannelInboundHandler;
  * @author gill
  * @version 2023/10/16
  **/
+@ChannelHandler.Sharable
 public class RaftServiceHandler extends SimpleChannelInboundHandler<Raft.Request> {
 
 	private static final Logger log = LoggerFactory.getLogger(RaftServiceHandler.class);
 
 	private final Node node;
 
-	private final ExecutorService handlers;
-
 	public RaftServiceHandler(Node node) {
 		this.node = node;
-		this.handlers = new ThreadPoolExecutor(Utils.CPU_CORES * 2 + 1, Utils.CPU_CORES * 4 + 2, 600, TimeUnit.SECONDS,
-				new LinkedBlockingQueue<>(20), r -> new Thread(r, "netty-handler-" + node.getId()));
 	}
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, Raft.Request request) {
+
+//		内存泄露模拟
+//		ctx.alloc().buffer();
+//		System.gc();
 		ServiceRegistry serviceRegistry = node.getServiceRegistry();
 		long requestId = request.getRequestId();
 		int serviceId = request.getServiceId();
 		log.trace("receive request, id: {}, service: {}", requestId, serviceId);
 		ByteString data = request.getData();
 		Function<byte[], byte[]> service = serviceRegistry.get(serviceId);
-		handlers.execute(() -> {
-			byte[] responseData = service.apply(data.toByteArray());
-			Raft.Response response = Raft.Response.newBuilder().setRequestId(requestId)
-					.setData(ByteString.copyFrom(responseData)).build();
-			ctx.writeAndFlush(response);
-		});
+		byte[] responseData = service.apply(data.toByteArray());
+		Raft.Response response = Raft.Response.newBuilder().setRequestId(requestId)
+				.setData(ByteString.copyFrom(responseData)).build();
+		ctx.writeAndFlush(response);
 	}
 }

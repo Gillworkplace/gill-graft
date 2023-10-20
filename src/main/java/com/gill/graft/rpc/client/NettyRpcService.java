@@ -1,5 +1,6 @@
 package com.gill.graft.rpc.client;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import com.gill.graft.apis.RaftRpcService;
@@ -23,6 +24,8 @@ public class NettyRpcService implements RaftRpcService {
 
 	private final NettyClient client;
 
+	private final AtomicInteger nodeId = new AtomicInteger(-1);
+
 	public NettyRpcService(String host, int port, Supplier<RaftConfig> supplyConfig) {
 		this.client = new NettyClient(host, port, supplyConfig);
 		this.client.connect();
@@ -35,8 +38,16 @@ public class NettyRpcService implements RaftRpcService {
 	 */
 	@Override
 	public int getId() {
-		byte[] retB = client.request(1, Internal.EMPTY_BYTE_ARRAY);
-		return RaftConverter.intDecode(retB);
+		if(nodeId.get() == -1) {
+			synchronized (nodeId) {
+				if(nodeId.get() == -1) {
+					byte[] retB = client.request(1, Internal.EMPTY_BYTE_ARRAY);
+					int nodeId = RaftConverter.intDecode(retB);
+					this.nodeId.set(nodeId);
+				}
+			}
+		}
+		return nodeId.get();
 	}
 
 	/**

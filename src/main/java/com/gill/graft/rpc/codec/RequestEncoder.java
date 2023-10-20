@@ -16,13 +16,13 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author gill
  * @version 2023/10/17
  **/
-public class RequestPreHandler extends MessageToMessageEncoder<Request> {
+public class RequestEncoder extends MessageToMessageEncoder<Request> {
 
     private final AtomicLong reqGen = new AtomicLong(0);
 
     private final ConnectionDock dock;
 
-    public RequestPreHandler(ConnectionDock dock) {
+    public RequestEncoder(ConnectionDock dock) {
         this.dock = dock;
     }
 

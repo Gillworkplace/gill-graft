@@ -10,7 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gill.graft.Node;
-import com.gill.graft.proto.Raft;
+import com.gill.graft.common.Utils;
+import com.gill.graft.rpc.handler.MetricsHandler;
+import com.gill.graft.rpc.handler.SharableChannelHandler;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -22,11 +24,10 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.protobuf.ProtobufDecoder;
-import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
-import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.ssl.SslContext;
+import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 
 /**
  * NettyServer
@@ -59,12 +60,15 @@ public class NettyServer {
 		running = true;
 		CountDownLatch latch = new CountDownLatch(1);
 		executor.execute(() -> {
-			NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
-			NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+			NioEventLoopGroup bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("boss-" + node.getId()));
+			NioEventLoopGroup workerGroup = new NioEventLoopGroup(0,
+					new DefaultThreadFactory("worker-" + node.getId()));
+			WorkerSocketChannelHandler workerHandler = new WorkerSocketChannelHandler(null);
+			registerMetrics(workerHandler, bossGroup, workerGroup);
 			try {
 				ServerBootstrap bs = new ServerBootstrap();
 				bs.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
-						.handler(new ServerSocketChannelHandler()).childHandler(new WorkerSocketChannelHandler(null));
+						.handler(new ServerSocketChannelHandler()).childHandler(workerHandler);
 				ChannelFuture channelFuture = bs.bind(port).sync();
 				log.info("netty server initialized");
 				latch.countDown();
@@ -83,6 +87,19 @@ public class NettyServer {
 			}
 		} catch (InterruptedException ignored) {
 		}
+	}
+
+	private void registerMetrics(WorkerSocketChannelHandler workerHandler, NioEventLoopGroup boss,
+			NioEventLoopGroup worker) {
+		workerHandler.metricsHandler.register("boss-threads", boss::executorCount);
+		// for (EventExecutor eventExecutor : boss) {
+		// if(eventExecutor instanceof NioEventLoop) {
+		// NioEventLoop nioEventLoop = (NioEventLoop) eventExecutor;
+		// workerHandler.metricsHandler.register(nioEventLoop.,
+		// nioEventLoop::pendingTasks);
+		// }
+		// }
+		workerHandler.metricsHandler.register("worker-threads", worker::executorCount);
 	}
 
 	static class ServerSocketChannelHandler extends ChannelInboundHandlerAdapter {
@@ -117,6 +134,13 @@ public class NettyServer {
 
 		private final SslContext sslCtx;
 
+		private final RaftServiceHandler serviceHandler = new RaftServiceHandler(node);
+
+		private final MetricsHandler metricsHandler = new MetricsHandler(node.getId());
+
+		private final UnorderedThreadPoolEventExecutor businessExecutor = new UnorderedThreadPoolEventExecutor(
+				Utils.CPU_CORES * 2, new DefaultThreadFactory("business-" + node.getId()));
+
 		public WorkerSocketChannelHandler(SslContext sslCtx) {
 			this.sslCtx = sslCtx;
 		}
@@ -129,13 +153,14 @@ public class NettyServer {
 			}
 
 			// out
-			pl.addLast(new ProtobufVarint32LengthFieldPrepender());
-			pl.addLast(new ProtobufEncoder());
+			pl.addLast("protobufFrameEncoder", SharableChannelHandler.PROTOBUF_FRAME_ENCODER);
+			pl.addLast("protobufProtocolEncoder", SharableChannelHandler.PROTOBUF_PROTOCOL_ENCODER);
 
 			// in
-			pl.addLast(new ProtobufVarint32FrameDecoder());
-			pl.addLast(new ProtobufDecoder(Raft.Request.getDefaultInstance()));
-			pl.addLast(new RaftServiceHandler(node));
+			pl.addLast("metricsHandler", metricsHandler);
+			pl.addLast("protobufFrameDecoder", new ProtobufVarint32FrameDecoder());
+			pl.addLast("protobufProtocolDecoder", SharableChannelHandler.PROTOBUF_PROTOCOL_DECODER_REQUEST);
+			pl.addLast(businessExecutor, "serviceHandler", serviceHandler);
 		}
 	}
 }
