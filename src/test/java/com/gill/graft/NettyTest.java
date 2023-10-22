@@ -99,12 +99,12 @@ public class NettyTest extends BaseTest {
 		Assertions.assertEquals(MOCK_NODE_TERM, reply.getTerm(), reply.toString());
 	}
 
-//	@RepeatedTest(10)
-	@Test
+	@RepeatedTest(10)
+//	@Test
 	public void testElection() {
 		List<MockNettyNode> nodes = nodesInitUntilStable(3);
 		System.out.println("============ TEST FINISHED =============");
-		sleep(999999);
+//		sleep(999999);
 		stopNodes(nodes);
 	}
 

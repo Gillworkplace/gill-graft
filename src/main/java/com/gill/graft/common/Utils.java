@@ -126,4 +126,13 @@ public class Utils {
 		}
 		return cnt.get() >= nodes.size() / 2;
 	}
+
+	/**
+	 * 是否为linux服务器
+	 * 
+	 * @return 是否
+	 */
+	public static boolean isLinux() {
+		return System.getProperty("os.name").toLowerCase().contains("linux");
+	}
 }

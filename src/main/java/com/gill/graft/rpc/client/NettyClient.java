@@ -8,9 +8,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import com.gill.graft.rpc.handler.SharableChannelHandler;
-import io.netty.channel.ChannelHandler;
-import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,17 +18,21 @@ import com.gill.graft.rpc.codec.Request;
 import com.gill.graft.rpc.codec.RequestEncoder;
 import com.gill.graft.rpc.codec.Response;
 import com.gill.graft.rpc.codec.ResponseDecoder;
+import com.gill.graft.rpc.handler.SharableChannelHandler;
 import com.google.protobuf.Internal;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.ssl.SslContext;
+import io.netty.util.concurrent.DefaultThreadFactory;
 
 /**
  * NettyClient
@@ -144,12 +145,17 @@ public class NettyClient {
 	}
 
 	private void doConnectAndPark() {
-		Bootstrap b = new Bootstrap();
+		Bootstrap bs = new Bootstrap();
 		NioEventLoopGroup group = new NioEventLoopGroup(0, new DefaultThreadFactory("netty-client"));
 		Channel c = null;
 		try {
-			b.group(group).channel(NioSocketChannel.class).handler(new ClientInitializer(null));
-			c = b.connect(host, port).sync().channel();
+			bs.group(group).handler(new ClientInitializer(null));
+			if (Utils.isLinux()) {
+				bs.channel(EpollSocketChannel.class);
+			} else {
+				bs.channel(NioSocketChannel.class);
+			}
+			c = bs.connect(host, port).sync().channel();
 			sc = c;
 			connected = true;
 			while (connected) {

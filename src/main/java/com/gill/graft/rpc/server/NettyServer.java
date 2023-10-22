@@ -11,15 +11,19 @@ import org.slf4j.LoggerFactory;
 
 import com.gill.graft.Node;
 import com.gill.graft.common.Utils;
-import com.gill.graft.rpc.handler.MetricsHandler;
+import com.gill.graft.rpc.MetricsRegistry;
+import com.gill.graft.rpc.handler.GlobalSocketChannelStatisticsHandler;
+import com.gill.graft.rpc.handler.ServerIdleStateHandler;
 import com.gill.graft.rpc.handler.SharableChannelHandler;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -63,12 +67,13 @@ public class NettyServer {
 			NioEventLoopGroup bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("boss-" + node.getId()));
 			NioEventLoopGroup workerGroup = new NioEventLoopGroup(0,
 					new DefaultThreadFactory("worker-" + node.getId()));
-			WorkerSocketChannelHandler workerHandler = new WorkerSocketChannelHandler(null);
-			registerMetrics(workerHandler, bossGroup, workerGroup);
+			MetricsRegistry metricsRegistry = new MetricsRegistry(node.getId());
+			registerMetrics(metricsRegistry, bossGroup, workerGroup);
+			WorkerSocketChannelHandler workerHandler = new WorkerSocketChannelHandler(null, metricsRegistry);
 			try {
 				ServerBootstrap bs = new ServerBootstrap();
-				bs.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
-						.handler(new ServerSocketChannelHandler()).childHandler(workerHandler);
+				bs.group(bossGroup, workerGroup).handler(new ServerSocketChannelHandler()).childHandler(workerHandler);
+				selectServerChannelType(bs);
 				ChannelFuture channelFuture = bs.bind(port).sync();
 				log.info("netty server initialized");
 				latch.countDown();
@@ -77,6 +82,7 @@ public class NettyServer {
 			} catch (InterruptedException e) {
 				log.error("netty server interrupted, e: {}", e.getMessage());
 			} finally {
+				metricsRegistry.remove();
 				bossGroup.shutdownGracefully();
 				workerGroup.shutdownGracefully();
 			}
@@ -89,19 +95,27 @@ public class NettyServer {
 		}
 	}
 
-	private void registerMetrics(WorkerSocketChannelHandler workerHandler, NioEventLoopGroup boss,
-			NioEventLoopGroup worker) {
-		workerHandler.metricsHandler.register("boss-threads", boss::executorCount);
+	private static void selectServerChannelType(ServerBootstrap bs) {
+		if (Utils.isLinux()) {
+			bs.channel(EpollServerSocketChannel.class);
+		} else {
+			bs.channel(NioServerSocketChannel.class);
+		}
+	}
+
+	private void registerMetrics(MetricsRegistry metricsRegistry, NioEventLoopGroup boss, NioEventLoopGroup worker) {
+		metricsRegistry.register("boss-threads", boss::executorCount);
 		// for (EventExecutor eventExecutor : boss) {
 		// if(eventExecutor instanceof NioEventLoop) {
 		// NioEventLoop nioEventLoop = (NioEventLoop) eventExecutor;
-		// workerHandler.metricsHandler.register(nioEventLoop.,
+		// metricsRegistry.register(nioEventLoop.,
 		// nioEventLoop::pendingTasks);
 		// }
 		// }
-		workerHandler.metricsHandler.register("worker-threads", worker::executorCount);
+		metricsRegistry.register("worker-threads", worker::executorCount);
 	}
 
+	@ChannelHandler.Sharable
 	static class ServerSocketChannelHandler extends ChannelInboundHandlerAdapter {
 
 		private static final Logger log = LoggerFactory.getLogger(ServerSocketChannelHandler.class);
@@ -136,13 +150,15 @@ public class NettyServer {
 
 		private final RaftServiceHandler serviceHandler = new RaftServiceHandler(node);
 
-		private final MetricsHandler metricsHandler = new MetricsHandler(node.getId());
+		private final GlobalSocketChannelStatisticsHandler globalSocketChannelStatisticsHandler;
 
 		private final UnorderedThreadPoolEventExecutor businessExecutor = new UnorderedThreadPoolEventExecutor(
 				Utils.CPU_CORES * 2, new DefaultThreadFactory("business-" + node.getId()));
 
-		public WorkerSocketChannelHandler(SslContext sslCtx) {
+		public WorkerSocketChannelHandler(SslContext sslCtx, MetricsRegistry metricsRegistry) {
 			this.sslCtx = sslCtx;
+			this.globalSocketChannelStatisticsHandler = new GlobalSocketChannelStatisticsHandler(node.getId(),
+					metricsRegistry);
 		}
 
 		@Override
@@ -157,7 +173,8 @@ public class NettyServer {
 			pl.addLast("protobufProtocolEncoder", SharableChannelHandler.PROTOBUF_PROTOCOL_ENCODER);
 
 			// in
-			pl.addLast("metricsHandler", metricsHandler);
+			pl.addLast("idleStateHandler", new ServerIdleStateHandler(node.getId()));
+			pl.addLast("globalSocketChannelStatisticsHandler", globalSocketChannelStatisticsHandler);
 			pl.addLast("protobufFrameDecoder", new ProtobufVarint32FrameDecoder());
 			pl.addLast("protobufProtocolDecoder", SharableChannelHandler.PROTOBUF_PROTOCOL_DECODER_REQUEST);
 			pl.addLast(businessExecutor, "serviceHandler", serviceHandler);
