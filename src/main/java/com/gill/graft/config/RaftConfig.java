@@ -1,5 +1,7 @@
 package com.gill.graft.config;
 
+import com.google.protobuf.Internal;
+
 /**
  * RaftConfig
  *
@@ -27,6 +29,8 @@ public class RaftConfig {
 	private long snapshotPersistedInterval = 5L * 60 * 1000;
 
 	private LogConfig logConfig = new LogConfig();
+
+	private AuthConfig authConfig = new AuthConfig();
 
 	public int getPort() {
 		return port;
@@ -108,6 +112,14 @@ public class RaftConfig {
 		this.logConfig = logConfig;
 	}
 
+	public AuthConfig getAuthConfig() {
+		return authConfig;
+	}
+
+	public void setAuthConfig(AuthConfig authConfig) {
+		this.authConfig = authConfig;
+	}
+
 	@Override
 	public String toString() {
 		return "RaftConfig{" + "heartbeatInterval=" + heartbeatInterval + ", baseTimeoutInterval=" + baseTimeoutInterval
@@ -130,6 +142,29 @@ public class RaftConfig {
 		@Override
 		public String toString() {
 			return "LogConfig{" + "loadLen=" + loadLen + '}';
+		}
+	}
+
+	public static class AuthConfig {
+
+		private long authKey = 0;
+
+		private byte[] authValue = Internal.EMPTY_BYTE_ARRAY;
+
+		public long getAuthKey() {
+			return authKey;
+		}
+
+		public void setAuthKey(long authKey) {
+			this.authKey = authKey;
+		}
+
+		public byte[] getAuthValue() {
+			return authValue;
+		}
+
+		public void setAuthValue(byte[] authValue) {
+			this.authValue = authValue;
 		}
 	}
 }

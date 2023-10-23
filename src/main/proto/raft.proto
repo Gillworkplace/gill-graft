@@ -4,6 +4,18 @@ package com.gill.graft;
 
 option java_package = "com.gill.graft.proto";
 
+message Auth {
+
+  int64 authKey = 1;
+
+  bytes authValue = 2;
+}
+
+message AuthResponse {
+
+  bool success = 1;
+}
+
 message Request {
 
   int64 requestId = 1;

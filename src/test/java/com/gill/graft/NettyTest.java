@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import com.gill.graft.apis.RaftRpcService;
+import com.gill.graft.common.Utils;
 import com.gill.graft.config.RaftConfig;
 import com.gill.graft.entity.AppendLogEntriesParam;
 import com.gill.graft.entity.AppendLogReply;
@@ -39,46 +41,97 @@ public class NettyTest extends BaseTest {
 	private static final String HOST = "127.0.0.1";
 
 	@Test
+	public void testAuthSuccess() {
+		Node node = genNode(1, new byte[]{79, 23, 12});
+		int port = node.getConfig().getPort();
+		RaftConfig raftConfig = new RaftConfig();
+		RaftConfig.AuthConfig authConfig = raftConfig.getAuthConfig();
+		authConfig.setAuthKey(1);
+		authConfig.setAuthValue(new byte[]{79, 23, 12});
+		NettyRpcService service = new NettyRpcService(HOST, port, () -> raftConfig);
+		int id = service.getId();
+		Assertions.assertEquals(0, id);
+		node.stop();
+	}
+
+	@Test
+	public void testAuthFailed_keyNotEquals() {
+		Node node = genNode(2, new byte[]{79, 23, 12});
+		int port = node.getConfig().getPort();
+		RaftConfig raftConfig = new RaftConfig();
+		RaftConfig.AuthConfig authConfig = raftConfig.getAuthConfig();
+		authConfig.setAuthKey(1);
+		authConfig.setAuthValue(new byte[]{79, 23, 12});
+		NettyRpcService service = new NettyRpcService(HOST, port, () -> raftConfig);
+		int id = Utils.cost(service::getId, "getId");
+		Assertions.assertEquals(-1, id);
+		node.stop();
+	}
+
+	@Test
+	public void testAuthFailed_valueNotEquals() {
+		Node node = genNode(1, new byte[]{32, 43, 23});
+		int port = node.getConfig().getPort();
+		RaftConfig raftConfig = new RaftConfig();
+		RaftConfig.AuthConfig authConfig = raftConfig.getAuthConfig();
+		authConfig.setAuthKey(1);
+		authConfig.setAuthValue(new byte[]{79, 23, 12});
+		NettyRpcService service = new NettyRpcService(HOST, port, () -> raftConfig);
+		int id = Utils.cost(service::getId, "getId");
+		Assertions.assertEquals(-1, id);
+		node.stop();
+	}
+
+	@Test
 	public void testGetId() {
-		int port = genNode();
+		Node node = genNode();
+		int port = node.getConfig().getPort();
 		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
 		int id = service.getId();
 		Assertions.assertEquals(0, id);
+		node.stop();
 	}
 
 	@Test
 	public void testPreVote() {
-		int port = genNode();
+		Node node = genNode();
+		int port = node.getConfig().getPort();
 		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
 		PreVoteParam param = new PreVoteParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0);
 		Reply reply = service.preVote(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
 		Assertions.assertEquals(0, reply.getTerm(), reply.toString());
+		node.stop();
 	}
 
 	@Test
 	public void testRequestVote() {
-		int port = genNode();
+		Node node = genNode();
+		int port = node.getConfig().getPort();
 		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
 		RequestVoteParam param = new RequestVoteParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0);
 		Reply reply = service.requestVote(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
 		Assertions.assertEquals(MOCK_NODE_TERM, reply.getTerm(), reply.toString());
+		node.stop();
 	}
 
 	@Test
 	public void testHeartbeat() {
-		int port = genNode();
+		Node node = genNode();
+		int port = node.getConfig().getPort();
 		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
 		AppendLogEntriesParam param = new AppendLogEntriesParam(MOCK_NODE_ID, MOCK_NODE_TERM);
 		AppendLogReply reply = service.appendLogEntries(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
 		Assertions.assertEquals(MOCK_NODE_TERM, reply.getTerm(), reply.toString());
+		node.stop();
 	}
 
 	@Test
 	public void testAppendLogEntries() {
-		int port = genNode();
+		Node node = genNode();
+		int port = node.getConfig().getPort();
 		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
 		LogEntry logEntry = new LogEntry(1, MOCK_NODE_TERM, "");
 		AppendLogEntriesParam param = new AppendLogEntriesParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0, 0,
@@ -86,25 +139,35 @@ public class NettyTest extends BaseTest {
 		AppendLogReply reply = service.appendLogEntries(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
 		Assertions.assertEquals(MOCK_NODE_TERM, reply.getTerm(), reply.toString());
+		node.stop();
 	}
 
 	@Test
 	public void testReplicateSnapshot() {
-		int port = genNode();
+		Node node = genNode();
+		int port = node.getConfig().getPort();
 		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
 		ReplicateSnapshotParam param = new ReplicateSnapshotParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0,
 				Internal.EMPTY_BYTE_ARRAY);
 		Reply reply = service.replicateSnapshot(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
 		Assertions.assertEquals(MOCK_NODE_TERM, reply.getTerm(), reply.toString());
+		node.stop();
 	}
 
 	@RepeatedTest(10)
-//	@Test
 	public void testElection() {
 		List<MockNettyNode> nodes = nodesInitUntilStable(3);
 		System.out.println("============ TEST FINISHED =============");
-//		sleep(999999);
+		stopNodes(nodes);
+	}
+
+	@Test
+	@Disabled
+	public void debugElection() {
+		List<MockNettyNode> nodes = nodesInitUntilStable(3);
+		System.out.println("============ TEST FINISHED =============");
+		sleep(999999);
 		stopNodes(nodes);
 	}
 
@@ -114,6 +177,7 @@ public class NettyTest extends BaseTest {
 		MockNettyNode leader = findLeader(nodes);
 		leader.stop();
 		waitUtilStable(nodes);
+		System.out.println("============ RE-ELECTION FINISHED =============");
 		leader.start(getFollowers(nodes, leader));
 		waitUtilStable(nodes);
 		assertCluster(nodes);
@@ -121,12 +185,22 @@ public class NettyTest extends BaseTest {
 		stopNodes(nodes);
 	}
 
-	private int genNode() {
+	private Node genNode() {
 		Node node = new Node(0);
 		int freePort = BaseTest.findFreePort();
 		node.getConfig().setPort(freePort);
 		node.start(Collections.emptyList(), true);
-		return freePort;
+		return node;
+	}
+
+	private Node genNode(long authKey, byte[] authValue) {
+		Node node = new Node(0);
+		int freePort = BaseTest.findFreePort();
+		node.getConfig().setPort(freePort);
+		node.getConfig().getAuthConfig().setAuthKey(authKey);
+		node.getConfig().getAuthConfig().setAuthValue(authValue);
+		node.start(Collections.emptyList(), true);
+		return node;
 	}
 
 	private List<MockNettyNode> init(int num) {

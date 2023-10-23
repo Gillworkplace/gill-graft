@@ -24,6 +24,4 @@ public class SharableChannelHandler {
 
 	public static final ChannelHandler PROTOBUF_PROTOCOL_DECODER_RESPONSE = new ProtobufDecoder(
 			Raft.Response.getDefaultInstance());
-
-//	public static final ChannelHandler METRICS_HANDLER = new MetricsHandler();
 }

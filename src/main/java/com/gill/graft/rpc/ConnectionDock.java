@@ -1,11 +1,10 @@
 package com.gill.graft.rpc;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
-import com.gill.graft.config.RaftConfig;
 import com.gill.graft.rpc.codec.Response;
 
 /**
@@ -17,7 +16,6 @@ import com.gill.graft.rpc.codec.Response;
 public class ConnectionDock {
 
 	private final Map<Long, CompletableFuture<Response>> resps = new ConcurrentHashMap<>(1024);
-
 
 	/**
 	 * 添加等待的请求
@@ -44,6 +42,15 @@ public class ConnectionDock {
 		if (cf != null) {
 			cf.complete(resp);
 			resps.remove(requestId);
+		}
+	}
+
+	/**
+	 * 释放所有请求
+	 */
+	public void release() {
+		for (CompletableFuture<Response> cf : resps.values()) {
+			cf.cancel(true);
 		}
 	}
 }

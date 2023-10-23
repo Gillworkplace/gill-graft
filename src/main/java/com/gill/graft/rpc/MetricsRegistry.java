@@ -35,6 +35,7 @@ public class MetricsRegistry {
 	 *            类型
 	 */
 	public <T> void register(String name, Gauge<T> gauge) {
+		metricRegistry.remove(name);
 		metricRegistry.register(name + "-" + nodeId, gauge);
 	}
 

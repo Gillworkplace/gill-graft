@@ -502,6 +502,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		this.publishEvent(RaftEvent.STOP, new RaftEventParams(Integer.MAX_VALUE, true));
 		this.machine.stop();
 		releaseOldFollowers();
+		this.server.stop();
 	}
 
 	@Override

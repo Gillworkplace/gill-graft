@@ -6,12 +6,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gill.graft.Node;
 import com.gill.graft.common.Utils;
 import com.gill.graft.rpc.MetricsRegistry;
+import com.gill.graft.rpc.handler.AuthHandler;
 import com.gill.graft.rpc.handler.GlobalSocketChannelStatisticsHandler;
 import com.gill.graft.rpc.handler.ServerIdleStateHandler;
 import com.gill.graft.rpc.handler.SharableChannelHandler;
@@ -48,6 +50,8 @@ public class NettyServer {
 
 	private volatile boolean running = false;
 
+	private volatile Channel c;
+
 	private final Node node;
 
 	public NettyServer(Node node) {
@@ -76,8 +80,9 @@ public class NettyServer {
 				selectServerChannelType(bs);
 				ChannelFuture channelFuture = bs.bind(port).sync();
 				log.info("netty server initialized");
+				c = channelFuture.channel();
 				latch.countDown();
-				channelFuture.channel().closeFuture().sync();
+				c.closeFuture().sync();
 				log.info("netty server closed");
 			} catch (InterruptedException e) {
 				log.error("netty server interrupted, e: {}", e.getMessage());
@@ -92,6 +97,17 @@ public class NettyServer {
 				log.error("start netty server failed.");
 			}
 		} catch (InterruptedException ignored) {
+		}
+	}
+
+	public synchronized void stop() {
+		if(c != null) {
+			try {
+				c.close().sync();
+				c = null;
+			} catch (InterruptedException e) {
+				log.error("occur interrupted when netty server is closing, e: {}", e.getMessage());
+			}
 		}
 	}
 
@@ -152,6 +168,8 @@ public class NettyServer {
 
 		private final GlobalSocketChannelStatisticsHandler globalSocketChannelStatisticsHandler;
 
+		private final AuthHandler authHandler = new AuthHandler(node.getConfig()::getAuthConfig);
+
 		private final UnorderedThreadPoolEventExecutor businessExecutor = new UnorderedThreadPoolEventExecutor(
 				Utils.CPU_CORES * 2, new DefaultThreadFactory("business-" + node.getId()));
 
@@ -177,6 +195,7 @@ public class NettyServer {
 			pl.addLast("globalSocketChannelStatisticsHandler", globalSocketChannelStatisticsHandler);
 			pl.addLast("protobufFrameDecoder", new ProtobufVarint32FrameDecoder());
 			pl.addLast("protobufProtocolDecoder", SharableChannelHandler.PROTOBUF_PROTOCOL_DECODER_REQUEST);
+			pl.addLast("authHandler", authHandler);
 			pl.addLast(businessExecutor, "serviceHandler", serviceHandler);
 		}
 	}

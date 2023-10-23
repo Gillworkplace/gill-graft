@@ -14,6 +14,1033 @@ public final class Raft {
     registerAllExtensions(
         (com.google.protobuf.ExtensionRegistryLite) registry);
   }
+  public interface AuthOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:com.gill.graft.Auth)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>int64 authKey = 1;</code>
+     * @return The authKey.
+     */
+    long getAuthKey();
+
+    /**
+     * <code>bytes authValue = 2;</code>
+     * @return The authValue.
+     */
+    com.google.protobuf.ByteString getAuthValue();
+  }
+  /**
+   * Protobuf type {@code com.gill.graft.Auth}
+   */
+  public static final class Auth extends
+      com.google.protobuf.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:com.gill.graft.Auth)
+      AuthOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use Auth.newBuilder() to construct.
+    private Auth(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private Auth() {
+      authValue_ = com.google.protobuf.ByteString.EMPTY;
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        UnusedPrivateParameter unused) {
+      return new Auth();
+    }
+
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return com.gill.graft.proto.Raft.internal_static_com_gill_graft_Auth_descriptor;
+    }
+
+    @java.lang.Override
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return com.gill.graft.proto.Raft.internal_static_com_gill_graft_Auth_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              com.gill.graft.proto.Raft.Auth.class, com.gill.graft.proto.Raft.Auth.Builder.class);
+    }
+
+    public static final int AUTHKEY_FIELD_NUMBER = 1;
+    private long authKey_ = 0L;
+    /**
+     * <code>int64 authKey = 1;</code>
+     * @return The authKey.
+     */
+    @java.lang.Override
+    public long getAuthKey() {
+      return authKey_;
+    }
+
+    public static final int AUTHVALUE_FIELD_NUMBER = 2;
+    private com.google.protobuf.ByteString authValue_ = com.google.protobuf.ByteString.EMPTY;
+    /**
+     * <code>bytes authValue = 2;</code>
+     * @return The authValue.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString getAuthValue() {
+      return authValue_;
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (authKey_ != 0L) {
+        output.writeInt64(1, authKey_);
+      }
+      if (!authValue_.isEmpty()) {
+        output.writeBytes(2, authValue_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (authKey_ != 0L) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(1, authKey_);
+      }
+      if (!authValue_.isEmpty()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(2, authValue_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof com.gill.graft.proto.Raft.Auth)) {
+        return super.equals(obj);
+      }
+      com.gill.graft.proto.Raft.Auth other = (com.gill.graft.proto.Raft.Auth) obj;
+
+      if (getAuthKey()
+          != other.getAuthKey()) return false;
+      if (!getAuthValue()
+          .equals(other.getAuthValue())) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + AUTHKEY_FIELD_NUMBER;
+      hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
+          getAuthKey());
+      hash = (37 * hash) + AUTHVALUE_FIELD_NUMBER;
+      hash = (53 * hash) + getAuthValue().hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static com.gill.graft.proto.Raft.Auth parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.gill.graft.proto.Raft.Auth parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.gill.graft.proto.Raft.Auth parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.gill.graft.proto.Raft.Auth parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.gill.graft.proto.Raft.Auth parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.gill.graft.proto.Raft.Auth parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.gill.graft.proto.Raft.Auth parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static com.gill.graft.proto.Raft.Auth parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    public static com.gill.graft.proto.Raft.Auth parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+
+    public static com.gill.graft.proto.Raft.Auth parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static com.gill.graft.proto.Raft.Auth parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static com.gill.graft.proto.Raft.Auth parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(com.gill.graft.proto.Raft.Auth prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code com.gill.graft.Auth}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:com.gill.graft.Auth)
+        com.gill.graft.proto.Raft.AuthOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return com.gill.graft.proto.Raft.internal_static_com_gill_graft_Auth_descriptor;
+      }
+
+      @java.lang.Override
+      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return com.gill.graft.proto.Raft.internal_static_com_gill_graft_Auth_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                com.gill.graft.proto.Raft.Auth.class, com.gill.graft.proto.Raft.Auth.Builder.class);
+      }
+
+      // Construct using com.gill.graft.proto.Raft.Auth.newBuilder()
+      private Builder() {
+
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        bitField0_ = 0;
+        authKey_ = 0L;
+        authValue_ = com.google.protobuf.ByteString.EMPTY;
+        return this;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return com.gill.graft.proto.Raft.internal_static_com_gill_graft_Auth_descriptor;
+      }
+
+      @java.lang.Override
+      public com.gill.graft.proto.Raft.Auth getDefaultInstanceForType() {
+        return com.gill.graft.proto.Raft.Auth.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public com.gill.graft.proto.Raft.Auth build() {
+        com.gill.graft.proto.Raft.Auth result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public com.gill.graft.proto.Raft.Auth buildPartial() {
+        com.gill.graft.proto.Raft.Auth result = new com.gill.graft.proto.Raft.Auth(this);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartial0(com.gill.graft.proto.Raft.Auth result) {
+        int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.authKey_ = authKey_;
+        }
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.authValue_ = authValue_;
+        }
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          com.google.protobuf.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof com.gill.graft.proto.Raft.Auth) {
+          return mergeFrom((com.gill.graft.proto.Raft.Auth)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(com.gill.graft.proto.Raft.Auth other) {
+        if (other == com.gill.graft.proto.Raft.Auth.getDefaultInstance()) return this;
+        if (other.getAuthKey() != 0L) {
+          setAuthKey(other.getAuthKey());
+        }
+        if (other.getAuthValue() != com.google.protobuf.ByteString.EMPTY) {
+          setAuthValue(other.getAuthValue());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 8: {
+                authKey_ = input.readInt64();
+                bitField0_ |= 0x00000001;
+                break;
+              } // case 8
+              case 18: {
+                authValue_ = input.readBytes();
+                bitField0_ |= 0x00000002;
+                break;
+              } // case 18
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.unwrapIOException();
+        } finally {
+          onChanged();
+        } // finally
+        return this;
+      }
+      private int bitField0_;
+
+      private long authKey_ ;
+      /**
+       * <code>int64 authKey = 1;</code>
+       * @return The authKey.
+       */
+      @java.lang.Override
+      public long getAuthKey() {
+        return authKey_;
+      }
+      /**
+       * <code>int64 authKey = 1;</code>
+       * @param value The authKey to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAuthKey(long value) {
+
+        authKey_ = value;
+        bitField0_ |= 0x00000001;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>int64 authKey = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAuthKey() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        authKey_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private com.google.protobuf.ByteString authValue_ = com.google.protobuf.ByteString.EMPTY;
+      /**
+       * <code>bytes authValue = 2;</code>
+       * @return The authValue.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString getAuthValue() {
+        return authValue_;
+      }
+      /**
+       * <code>bytes authValue = 2;</code>
+       * @param value The authValue to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAuthValue(com.google.protobuf.ByteString value) {
+        if (value == null) { throw new NullPointerException(); }
+        authValue_ = value;
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>bytes authValue = 2;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAuthValue() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        authValue_ = getDefaultInstance().getAuthValue();
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:com.gill.graft.Auth)
+    }
+
+    // @@protoc_insertion_point(class_scope:com.gill.graft.Auth)
+    private static final com.gill.graft.proto.Raft.Auth DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new com.gill.graft.proto.Raft.Auth();
+    }
+
+    public static com.gill.graft.proto.Raft.Auth getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<Auth>
+        PARSER = new com.google.protobuf.AbstractParser<Auth>() {
+      @java.lang.Override
+      public Auth parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (com.google.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
+      }
+    };
+
+    public static com.google.protobuf.Parser<Auth> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<Auth> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.gill.graft.proto.Raft.Auth getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
+  public interface AuthResponseOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:com.gill.graft.AuthResponse)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>bool success = 1;</code>
+     * @return The success.
+     */
+    boolean getSuccess();
+  }
+  /**
+   * Protobuf type {@code com.gill.graft.AuthResponse}
+   */
+  public static final class AuthResponse extends
+      com.google.protobuf.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:com.gill.graft.AuthResponse)
+      AuthResponseOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use AuthResponse.newBuilder() to construct.
+    private AuthResponse(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private AuthResponse() {
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        UnusedPrivateParameter unused) {
+      return new AuthResponse();
+    }
+
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return com.gill.graft.proto.Raft.internal_static_com_gill_graft_AuthResponse_descriptor;
+    }
+
+    @java.lang.Override
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return com.gill.graft.proto.Raft.internal_static_com_gill_graft_AuthResponse_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              com.gill.graft.proto.Raft.AuthResponse.class, com.gill.graft.proto.Raft.AuthResponse.Builder.class);
+    }
+
+    public static final int SUCCESS_FIELD_NUMBER = 1;
+    private boolean success_ = false;
+    /**
+     * <code>bool success = 1;</code>
+     * @return The success.
+     */
+    @java.lang.Override
+    public boolean getSuccess() {
+      return success_;
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (success_ != false) {
+        output.writeBool(1, success_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (success_ != false) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(1, success_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof com.gill.graft.proto.Raft.AuthResponse)) {
+        return super.equals(obj);
+      }
+      com.gill.graft.proto.Raft.AuthResponse other = (com.gill.graft.proto.Raft.AuthResponse) obj;
+
+      if (getSuccess()
+          != other.getSuccess()) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + SUCCESS_FIELD_NUMBER;
+      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+          getSuccess());
+      hash = (29 * hash) + getUnknownFields().hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    public static com.gill.graft.proto.Raft.AuthResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+
+    public static com.gill.graft.proto.Raft.AuthResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static com.gill.graft.proto.Raft.AuthResponse parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(com.gill.graft.proto.Raft.AuthResponse prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code com.gill.graft.AuthResponse}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:com.gill.graft.AuthResponse)
+        com.gill.graft.proto.Raft.AuthResponseOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return com.gill.graft.proto.Raft.internal_static_com_gill_graft_AuthResponse_descriptor;
+      }
+
+      @java.lang.Override
+      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return com.gill.graft.proto.Raft.internal_static_com_gill_graft_AuthResponse_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                com.gill.graft.proto.Raft.AuthResponse.class, com.gill.graft.proto.Raft.AuthResponse.Builder.class);
+      }
+
+      // Construct using com.gill.graft.proto.Raft.AuthResponse.newBuilder()
+      private Builder() {
+
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        bitField0_ = 0;
+        success_ = false;
+        return this;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return com.gill.graft.proto.Raft.internal_static_com_gill_graft_AuthResponse_descriptor;
+      }
+
+      @java.lang.Override
+      public com.gill.graft.proto.Raft.AuthResponse getDefaultInstanceForType() {
+        return com.gill.graft.proto.Raft.AuthResponse.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public com.gill.graft.proto.Raft.AuthResponse build() {
+        com.gill.graft.proto.Raft.AuthResponse result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public com.gill.graft.proto.Raft.AuthResponse buildPartial() {
+        com.gill.graft.proto.Raft.AuthResponse result = new com.gill.graft.proto.Raft.AuthResponse(this);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartial0(com.gill.graft.proto.Raft.AuthResponse result) {
+        int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.success_ = success_;
+        }
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          com.google.protobuf.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof com.gill.graft.proto.Raft.AuthResponse) {
+          return mergeFrom((com.gill.graft.proto.Raft.AuthResponse)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(com.gill.graft.proto.Raft.AuthResponse other) {
+        if (other == com.gill.graft.proto.Raft.AuthResponse.getDefaultInstance()) return this;
+        if (other.getSuccess() != false) {
+          setSuccess(other.getSuccess());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 8: {
+                success_ = input.readBool();
+                bitField0_ |= 0x00000001;
+                break;
+              } // case 8
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.unwrapIOException();
+        } finally {
+          onChanged();
+        } // finally
+        return this;
+      }
+      private int bitField0_;
+
+      private boolean success_ ;
+      /**
+       * <code>bool success = 1;</code>
+       * @return The success.
+       */
+      @java.lang.Override
+      public boolean getSuccess() {
+        return success_;
+      }
+      /**
+       * <code>bool success = 1;</code>
+       * @param value The success to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSuccess(boolean value) {
+
+        success_ = value;
+        bitField0_ |= 0x00000001;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>bool success = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSuccess() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        success_ = false;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:com.gill.graft.AuthResponse)
+    }
+
+    // @@protoc_insertion_point(class_scope:com.gill.graft.AuthResponse)
+    private static final com.gill.graft.proto.Raft.AuthResponse DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new com.gill.graft.proto.Raft.AuthResponse();
+    }
+
+    public static com.gill.graft.proto.Raft.AuthResponse getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<AuthResponse>
+        PARSER = new com.google.protobuf.AbstractParser<AuthResponse>() {
+      @java.lang.Override
+      public AuthResponse parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (com.google.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
+      }
+    };
+
+    public static com.google.protobuf.Parser<AuthResponse> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<AuthResponse> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.gill.graft.proto.Raft.AuthResponse getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   public interface RequestOrBuilder extends
       // @@protoc_insertion_point(interface_extends:com.gill.graft.Request)
       com.google.protobuf.MessageOrBuilder {
@@ -7217,6 +8244,16 @@ public final class Raft {
   }
 
   private static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_gill_graft_Auth_descriptor;
+  private static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_com_gill_graft_Auth_fieldAccessorTable;
+  private static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_gill_graft_AuthResponse_descriptor;
+  private static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_com_gill_graft_AuthResponse_fieldAccessorTable;
+  private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_com_gill_graft_Request_descriptor;
   private static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
@@ -7276,66 +8313,80 @@ public final class Raft {
   static {
     java.lang.String[] descriptorData = {
       "\n\031src/main/proto/raft.proto\022\016com.gill.gr" +
-      "aft\"=\n\007Request\022\021\n\trequestId\030\001 \001(\003\022\021\n\tser" +
-      "viceId\030\002 \001(\005\022\014\n\004data\030\003 \001(\014\"+\n\010Response\022\021" +
-      "\n\trequestId\030\001 \001(\003\022\014\n\004data\030\002 \001(\014\")\n\tBaseP" +
-      "aram\022\016\n\006nodeId\030\001 \001(\005\022\014\n\004term\030\002 \001(\003\"e\n\014Pr" +
-      "eVoteParam\022,\n\tbaseParam\030\001 \001(\0132\031.com.gill" +
-      ".graft.BaseParam\022\023\n\013lastLogTerm\030\002 \001(\003\022\022\n" +
-      "\nlastLogIdx\030\003 \001(\005\"i\n\020RequestVoteParam\022,\n" +
+      "aft\"*\n\004Auth\022\017\n\007authKey\030\001 \001(\003\022\021\n\tauthValu" +
+      "e\030\002 \001(\014\"\037\n\014AuthResponse\022\017\n\007success\030\001 \001(\010" +
+      "\"=\n\007Request\022\021\n\trequestId\030\001 \001(\003\022\021\n\tservic" +
+      "eId\030\002 \001(\005\022\014\n\004data\030\003 \001(\014\"+\n\010Response\022\021\n\tr" +
+      "equestId\030\001 \001(\003\022\014\n\004data\030\002 \001(\014\")\n\tBasePara" +
+      "m\022\016\n\006nodeId\030\001 \001(\005\022\014\n\004term\030\002 \001(\003\"e\n\014PreVo" +
+      "teParam\022,\n\tbaseParam\030\001 \001(\0132\031.com.gill.gr" +
+      "aft.BaseParam\022\023\n\013lastLogTerm\030\002 \001(\003\022\022\n\nla" +
+      "stLogIdx\030\003 \001(\005\"i\n\020RequestVoteParam\022,\n\tba" +
+      "seParam\030\001 \001(\0132\031.com.gill.graft.BaseParam" +
+      "\022\023\n\013lastLogTerm\030\002 \001(\003\022\022\n\nlastLogIdx\030\003 \001(" +
+      "\005\"\367\001\n\025AppendLogEntriesParam\022,\n\tbaseParam" +
+      "\030\001 \001(\0132\031.com.gill.graft.BaseParam\022\022\n\npre" +
+      "LogTerm\030\002 \001(\003\022\021\n\tpreLogIdx\030\003 \001(\005\022\021\n\tcomm" +
+      "itIdx\030\004 \001(\005\022<\n\004logs\030\005 \003(\0132..com.gill.gra" +
+      "ft.AppendLogEntriesParam.LogEntry\0328\n\010Log" +
+      "Entry\022\r\n\005index\030\001 \001(\005\022\014\n\004term\030\002 \001(\003\022\017\n\007co" +
+      "mmand\030\003 \001(\014\"y\n\026ReplicateSnapshotParam\022,\n" +
       "\tbaseParam\030\001 \001(\0132\031.com.gill.graft.BasePa" +
-      "ram\022\023\n\013lastLogTerm\030\002 \001(\003\022\022\n\nlastLogIdx\030\003" +
-      " \001(\005\"\367\001\n\025AppendLogEntriesParam\022,\n\tbasePa" +
-      "ram\030\001 \001(\0132\031.com.gill.graft.BaseParam\022\022\n\n" +
-      "preLogTerm\030\002 \001(\003\022\021\n\tpreLogIdx\030\003 \001(\005\022\021\n\tc" +
-      "ommitIdx\030\004 \001(\005\022<\n\004logs\030\005 \003(\0132..com.gill." +
-      "graft.AppendLogEntriesParam.LogEntry\0328\n\010" +
-      "LogEntry\022\r\n\005index\030\001 \001(\005\022\014\n\004term\030\002 \001(\003\022\017\n" +
-      "\007command\030\003 \001(\014\"y\n\026ReplicateSnapshotParam" +
-      "\022,\n\tbaseParam\030\001 \001(\0132\031.com.gill.graft.Bas" +
-      "eParam\022\020\n\010applyIdx\030\002 \001(\005\022\021\n\tapplyTerm\030\003 " +
-      "\001(\003\022\014\n\004data\030\004 \001(\014\"&\n\005Reply\022\017\n\007success\030\001 " +
-      "\001(\010\022\014\n\004term\030\002 \001(\003\"`\n\016AppendLogReply\022$\n\005r" +
-      "eply\030\001 \001(\0132\025.com.gill.graft.Reply\022\024\n\014syn" +
-      "cSnapshot\030\002 \001(\010\022\022\n\ncompareIdx\030\003 \001(\005B\026\n\024c" +
-      "om.gill.graft.protob\006proto3"
+      "ram\022\020\n\010applyIdx\030\002 \001(\005\022\021\n\tapplyTerm\030\003 \001(\003" +
+      "\022\014\n\004data\030\004 \001(\014\"&\n\005Reply\022\017\n\007success\030\001 \001(\010" +
+      "\022\014\n\004term\030\002 \001(\003\"`\n\016AppendLogReply\022$\n\005repl" +
+      "y\030\001 \001(\0132\025.com.gill.graft.Reply\022\024\n\014syncSn" +
+      "apshot\030\002 \001(\010\022\022\n\ncompareIdx\030\003 \001(\005B\026\n\024com." +
+      "gill.graft.protob\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         });
-    internal_static_com_gill_graft_Request_descriptor =
+    internal_static_com_gill_graft_Auth_descriptor =
       getDescriptor().getMessageTypes().get(0);
+    internal_static_com_gill_graft_Auth_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_com_gill_graft_Auth_descriptor,
+        new java.lang.String[] { "AuthKey", "AuthValue", });
+    internal_static_com_gill_graft_AuthResponse_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_com_gill_graft_AuthResponse_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_com_gill_graft_AuthResponse_descriptor,
+        new java.lang.String[] { "Success", });
+    internal_static_com_gill_graft_Request_descriptor =
+      getDescriptor().getMessageTypes().get(2);
     internal_static_com_gill_graft_Request_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_Request_descriptor,
         new java.lang.String[] { "RequestId", "ServiceId", "Data", });
     internal_static_com_gill_graft_Response_descriptor =
-      getDescriptor().getMessageTypes().get(1);
+      getDescriptor().getMessageTypes().get(3);
     internal_static_com_gill_graft_Response_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_Response_descriptor,
         new java.lang.String[] { "RequestId", "Data", });
     internal_static_com_gill_graft_BaseParam_descriptor =
-      getDescriptor().getMessageTypes().get(2);
+      getDescriptor().getMessageTypes().get(4);
     internal_static_com_gill_graft_BaseParam_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_BaseParam_descriptor,
         new java.lang.String[] { "NodeId", "Term", });
     internal_static_com_gill_graft_PreVoteParam_descriptor =
-      getDescriptor().getMessageTypes().get(3);
+      getDescriptor().getMessageTypes().get(5);
     internal_static_com_gill_graft_PreVoteParam_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_PreVoteParam_descriptor,
         new java.lang.String[] { "BaseParam", "LastLogTerm", "LastLogIdx", });
     internal_static_com_gill_graft_RequestVoteParam_descriptor =
-      getDescriptor().getMessageTypes().get(4);
+      getDescriptor().getMessageTypes().get(6);
     internal_static_com_gill_graft_RequestVoteParam_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_RequestVoteParam_descriptor,
         new java.lang.String[] { "BaseParam", "LastLogTerm", "LastLogIdx", });
     internal_static_com_gill_graft_AppendLogEntriesParam_descriptor =
-      getDescriptor().getMessageTypes().get(5);
+      getDescriptor().getMessageTypes().get(7);
     internal_static_com_gill_graft_AppendLogEntriesParam_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_AppendLogEntriesParam_descriptor,
@@ -7347,19 +8398,19 @@ public final class Raft {
         internal_static_com_gill_graft_AppendLogEntriesParam_LogEntry_descriptor,
         new java.lang.String[] { "Index", "Term", "Command", });
     internal_static_com_gill_graft_ReplicateSnapshotParam_descriptor =
-      getDescriptor().getMessageTypes().get(6);
+      getDescriptor().getMessageTypes().get(8);
     internal_static_com_gill_graft_ReplicateSnapshotParam_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_ReplicateSnapshotParam_descriptor,
         new java.lang.String[] { "BaseParam", "ApplyIdx", "ApplyTerm", "Data", });
     internal_static_com_gill_graft_Reply_descriptor =
-      getDescriptor().getMessageTypes().get(7);
+      getDescriptor().getMessageTypes().get(9);
     internal_static_com_gill_graft_Reply_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_Reply_descriptor,
         new java.lang.String[] { "Success", "Term", });
     internal_static_com_gill_graft_AppendLogReply_descriptor =
-      getDescriptor().getMessageTypes().get(8);
+      getDescriptor().getMessageTypes().get(10);
     internal_static_com_gill_graft_AppendLogReply_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_AppendLogReply_descriptor,
