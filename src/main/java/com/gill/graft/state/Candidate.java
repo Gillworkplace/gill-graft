@@ -3,6 +3,7 @@ package com.gill.graft.state;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import com.gill.graft.config.RaftConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,13 @@ public class Candidate {
 	 *            params
 	 */
 	public static void vote(Node self, RaftEventParams params) {
+
+		// 再次检验是否超时，降低在vote之前更新了超时时间导致本次选举失败的情况
+		if (isTimeout(self)) {
+			self.stepDown();
+			return;
+		}
+
 		long pTerm = params.getTerm();
 		long nextTerm = self.electSelf(pTerm);
 
@@ -60,6 +68,15 @@ public class Candidate {
 			Utils.sleepQuietly(RandomUtil.randomInt(10));
 			self.stepDown();
 		}
+	}
+
+	private static boolean isTimeout(Node self) {
+		RaftConfig newConfig = self.getConfig();
+		Pair<Long, Long> pair = self.getHeartbeatState().get();
+		long lastHeartbeatTimestamp = pair.getValue();
+		long now = System.currentTimeMillis();
+		long diff = now - lastHeartbeatTimestamp;
+		return diff <= newConfig.getBaseTimeoutInterval();
 	}
 
 	private static Reply doVote(Node self, RaftRpcService follower, long term) {

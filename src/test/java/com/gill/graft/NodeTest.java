@@ -190,7 +190,7 @@ public class NodeTest extends BaseTest {
 		stopNodes(nodes);
 	}
 
-	@Test
+	@RepeatedTest(5)
 	public void testRepairLogs_AfterLeaderDown() {
 		List<MockNode> nodes = nodesInitUntilStable(5);
 		MockNode originLeader = findLeader(nodes);
