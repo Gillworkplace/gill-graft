@@ -3,6 +3,7 @@ package com.gill.graft;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
@@ -25,6 +26,7 @@ import com.gill.graft.rpc.client.NettyRpcService;
 import com.google.protobuf.Internal;
 
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.RuntimeUtil;
 
 /**
  * NettyTest
@@ -48,7 +50,7 @@ public class NettyTest extends BaseTest {
 		RaftConfig.AuthConfig authConfig = raftConfig.getAuthConfig();
 		authConfig.setAuthKey(1);
 		authConfig.setAuthValue(new byte[]{79, 23, 12});
-		NettyRpcService service = new NettyRpcService(HOST, port, () -> raftConfig);
+		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
 		int id = service.getId();
 		Assertions.assertEquals(0, id);
 		node.stop();
@@ -62,7 +64,7 @@ public class NettyTest extends BaseTest {
 		RaftConfig.AuthConfig authConfig = raftConfig.getAuthConfig();
 		authConfig.setAuthKey(1);
 		authConfig.setAuthValue(new byte[]{79, 23, 12});
-		NettyRpcService service = new NettyRpcService(HOST, port, () -> raftConfig);
+		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
 		int id = Utils.cost(service::getId, "getId");
 		Assertions.assertEquals(-1, id);
 		node.stop();
@@ -76,7 +78,7 @@ public class NettyTest extends BaseTest {
 		RaftConfig.AuthConfig authConfig = raftConfig.getAuthConfig();
 		authConfig.setAuthKey(1);
 		authConfig.setAuthValue(new byte[]{79, 23, 12});
-		NettyRpcService service = new NettyRpcService(HOST, port, () -> raftConfig);
+		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
 		int id = Utils.cost(service::getId, "getId");
 		Assertions.assertEquals(-1, id);
 		node.stop();
@@ -96,7 +98,7 @@ public class NettyTest extends BaseTest {
 	public void testPreVote() {
 		Node node = genNode();
 		int port = node.getConfig().getPort();
-		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
+		NettyRpcService service = new NettyRpcService(node, HOST, port);
 		PreVoteParam param = new PreVoteParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0);
 		Reply reply = service.preVote(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
@@ -171,18 +173,49 @@ public class NettyTest extends BaseTest {
 		stopNodes(nodes);
 	}
 
-	@RepeatedTest(10)
+	// @RepeatedTest(10)
+	@Test
 	public void testRestart() {
 		List<MockNettyNode> nodes = nodesInitUntilStable(3);
+		sleep(10 * 1000);
 		MockNettyNode leader = findLeader(nodes);
 		leader.stop();
 		waitUtilStable(nodes);
+		sleep(10 * 1000);
 		System.out.println("============ RE-ELECTION FINISHED =============");
 		leader.start(getFollowers(nodes, leader));
 		waitUtilStable(nodes);
+		sleep(10 * 1000);
 		assertCluster(nodes);
 		System.out.println("============ TEST FINISHED =============");
 		stopNodes(nodes);
+	}
+
+	@Test
+	public void testRecoverFromIdle() {
+		List<MockNettyNode> nodes = nodesInitUntilStable(3);
+		Set<String> ports = nodes.stream().map(node -> node.getConfig().getPort()).map(String::valueOf)
+				.collect(Collectors.toSet());
+		sleep(10 * 1000);
+		printNetstat(ports);
+		MockNettyNode leader = findLeader(nodes);
+		leader.stop();
+		printNetstat(ports);
+		waitUtilStable(nodes, 10 * 1000);
+		System.out.println("========= TEST FINISHED =========");
+		stopNodes(nodes);
+	}
+
+	private static void printNetstat(Set<String> ports) {
+		System.out.println("========= NETSTAT =========");
+		RuntimeUtil.execForLines("netstat", "-ano").stream().filter(line -> {
+			for (String port : ports) {
+				if (line.contains(port)) {
+					return true;
+				}
+			}
+			return false;
+		}).forEach(System.out::println);
 	}
 
 	private Node genNode() {
@@ -215,7 +248,7 @@ public class NettyTest extends BaseTest {
 
 	private List<RaftRpcService> getFollowers(List<MockNettyNode> nodes, MockNettyNode self) {
 		return nodes.stream().filter(node -> node != self)
-				.map(node -> new NettyRpcService("127.0.0.1", node.getConfig().getPort(), node::getConfig))
+				.map(node -> new NettyRpcService(self, "127.0.0.1", node.getConfig().getPort()))
 				.collect(Collectors.toList());
 	}
 

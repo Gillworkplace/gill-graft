@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.gill.graft.common.Utils;
 import com.gill.graft.config.RaftConfig;
+import com.gill.graft.scheduler.SnapshotScheduler;
 
 /**
  * Schedulers
@@ -25,12 +26,18 @@ public class Schedulers {
 
 	private ScheduledExecutorService heartbeatScheduler;
 
+	private SnapshotScheduler snapshotScheduler = new SnapshotScheduler();
+
 	public ScheduledExecutorService getTimeoutScheduler() {
 		return timeoutScheduler;
 	}
 
 	public ScheduledExecutorService getHeartbeatScheduler() {
 		return heartbeatScheduler;
+	}
+
+	public SnapshotScheduler getSnapshotScheduler() {
+		return snapshotScheduler;
 	}
 
 	/**

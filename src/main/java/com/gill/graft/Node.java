@@ -34,9 +34,9 @@ import com.gill.graft.model.LogEntry;
 import com.gill.graft.model.PersistentProperties;
 import com.gill.graft.model.ProposeReply;
 import com.gill.graft.proto.RaftConverter;
+import com.gill.graft.rpc.MetricsRegistry;
 import com.gill.graft.rpc.ServiceRegistry;
 import com.gill.graft.rpc.server.NettyServer;
-import com.gill.graft.scheduler.SnapshotScheduler;
 import com.gill.graft.service.InnerNodeService;
 import com.gill.graft.service.PrintService;
 import com.gill.graft.service.RaftService;
@@ -99,6 +99,8 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		serviceRegistry.register(5, bytes -> replicateSnapshot(ReplicateSnapshotParam.decode(bytes)).encode());
 	}
 
+	private final MetricsRegistry metricsRegistry;
+
 	private final NettyServer server = new NettyServer(this);
 
 	/**
@@ -107,31 +109,35 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	private List<RaftRpcService> followers = Collections.emptyList();
 
 	public Node() {
-		id = RandomUtil.randomInt(100, 200);
-		metaDataManager = new MetaDataManager(new EmptyMetaStorage());
-		dataStorage = new EmptyDataStorage();
-		logManager = new LogManager(new EmptyLogStorage(), config.getLogConfig());
+		this.id = RandomUtil.randomInt(100, 200);
+		this.metaDataManager = new MetaDataManager(new EmptyMetaStorage());
+		this.dataStorage = new EmptyDataStorage();
+		this.logManager = new LogManager(new EmptyLogStorage(), this.config.getLogConfig());
+		this.metricsRegistry = new MetricsRegistry(this.id);
 	}
 
 	public Node(MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
-		id = RandomUtil.randomInt(100, 200);
-		metaDataManager = new MetaDataManager(metaStorage);
+		this.id = RandomUtil.randomInt(100, 200);
+		this.metaDataManager = new MetaDataManager(metaStorage);
 		this.dataStorage = dataStorage;
-		this.logManager = new LogManager(logStorage, config.getLogConfig());
+		this.logManager = new LogManager(logStorage, this.config.getLogConfig());
+		this.metricsRegistry = new MetricsRegistry(this.id);
 	}
 
 	public Node(int id) {
 		this.id = id;
-		metaDataManager = new MetaDataManager(new EmptyMetaStorage());
-		dataStorage = new EmptyDataStorage();
-		logManager = new LogManager(new EmptyLogStorage(), config.getLogConfig());
+		this.metaDataManager = new MetaDataManager(new EmptyMetaStorage());
+		this.dataStorage = new EmptyDataStorage();
+		this.logManager = new LogManager(new EmptyLogStorage(), this.config.getLogConfig());
+		this.metricsRegistry = new MetricsRegistry(this.id);
 	}
 
 	public Node(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
 		this.id = id;
-		metaDataManager = new MetaDataManager(metaStorage);
+		this.metaDataManager = new MetaDataManager(metaStorage);
 		this.dataStorage = dataStorage;
-		this.logManager = new LogManager(logStorage, config.getLogConfig());
+		this.logManager = new LogManager(logStorage, this.config.getLogConfig());
+		this.metricsRegistry = new MetricsRegistry(this.id);
 	}
 
 	public long getTerm() {
@@ -140,6 +146,10 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	public ServiceRegistry getServiceRegistry() {
 		return serviceRegistry;
+	}
+
+	public MetricsRegistry getMetricsRegistry() {
+		return metricsRegistry;
 	}
 
 	/**
@@ -460,7 +470,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	@Override
 	public synchronized void start(List<RaftRpcService> followers) {
-		start(followers, false,null);
+		start(followers, false, null);
 	}
 
 	public synchronized void start(List<RaftRpcService> followers, boolean useDefaultServer) {
@@ -468,16 +478,28 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	}
 
 	public synchronized void start(List<RaftRpcService> followers, boolean useDefaultServer, Integer priority) {
-		if(useDefaultServer) {
-			server.start(config.getPort());
-		}
-		this.machine.start();
 		calcPriority(priority);
-		releaseOldFollowers();
 		this.followers = followers;
+		if (useDefaultServer) {
+
+			// 启动netty server
+			this.server.start(this.config.getPort());
+		}
+
+		// 注册指标数据
+		this.metricsRegistry.start();
+
+		// 启动状态机
+		this.machine.start();
+
+		// 加载数据
 		loadData();
-		this.publishEvent(RaftEvent.INIT, new RaftEventParams(getTerm(), true));
-		SnapshotScheduler.start(dataStorage, config);
+
+		// 初始化节点状态
+		publishEvent(RaftEvent.INIT, new RaftEventParams(getTerm(), true));
+
+		// 启动快照定时器
+		schedulers.getSnapshotScheduler().start(this.dataStorage, this.config);
 	}
 
 	private void releaseOldFollowers() {
@@ -498,9 +520,10 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	@Override
 	public synchronized void stop() {
-		SnapshotScheduler.stop();
+		schedulers.getSnapshotScheduler().stop();
 		this.publishEvent(RaftEvent.STOP, new RaftEventParams(Integer.MAX_VALUE, true));
 		this.machine.stop();
+		this.metricsRegistry.remove();
 		releaseOldFollowers();
 		this.server.stop();
 	}

@@ -3,6 +3,7 @@ package com.gill.graft.rpc.client;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import com.gill.graft.Node;
 import com.gill.graft.apis.RaftRpcService;
 import com.gill.graft.config.RaftConfig;
 import com.gill.graft.entity.AppendLogEntriesParam;
@@ -11,8 +12,6 @@ import com.gill.graft.entity.PreVoteParam;
 import com.gill.graft.entity.ReplicateSnapshotParam;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.entity.RequestVoteParam;
-import com.gill.graft.proto.RaftConverter;
-import com.google.protobuf.Internal;
 
 /**
  * NettyRpcService
@@ -26,8 +25,13 @@ public class NettyRpcService implements RaftRpcService {
 
 	private final AtomicInteger nodeId = new AtomicInteger(-1);
 
-	public NettyRpcService(String host, int port, Supplier<RaftConfig> supplyConfig) {
-		this.client = new NettyClient(host, port, supplyConfig);
+	public NettyRpcService(Node node, String host, int port) {
+		this.client = new NettyClient(node.getId(), host, port, node::getConfig);
+		this.client.connect();
+	}
+
+	public NettyRpcService(String host, int port, Supplier<RaftConfig> raftConfigSupplier) {
+		this.client = new NettyClient(-1, host, port, raftConfigSupplier);
 		this.client.connect();
 	}
 
@@ -41,9 +45,7 @@ public class NettyRpcService implements RaftRpcService {
 		if(nodeId.get() == -1) {
 			synchronized (nodeId) {
 				if(nodeId.get() == -1) {
-					byte[] retB = client.request(1, Internal.EMPTY_BYTE_ARRAY);
-					int nodeId = RaftConverter.intDecode(retB);
-					this.nodeId.set(nodeId);
+					this.nodeId.set(client.getRemoteId());
 				}
 			}
 		}

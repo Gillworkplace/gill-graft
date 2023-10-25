@@ -17,15 +17,15 @@ import com.gill.graft.config.RaftConfig;
  **/
 public class SnapshotScheduler {
 
-	private static ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(1,
+	private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(1,
 			r -> new Thread(r, "snapshot-scheduler"));
 
-	public synchronized static void start(DataStorage dataStorage, RaftConfig config) {
+	public synchronized void start(DataStorage dataStorage, RaftConfig config) {
 		scheduler.scheduleAtFixedRate(dataStorage::saveSnapshotToFile, 0, config.getSnapshotPersistedInterval(),
 				TimeUnit.MILLISECONDS);
 	}
 
-	public synchronized static void stop() {
+	public synchronized void stop() {
 		ExecutorService tmp = scheduler;
 		scheduler = new ScheduledThreadPoolExecutor(1, r -> new Thread(r, "snapshot-scheduler"));
 		tmp.shutdown();

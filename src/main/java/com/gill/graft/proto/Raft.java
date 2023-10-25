@@ -19,13 +19,19 @@ public final class Raft {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>int64 authKey = 1;</code>
+     * <code>int32 nodeId = 1;</code>
+     * @return The nodeId.
+     */
+    int getNodeId();
+
+    /**
+     * <code>int64 authKey = 2;</code>
      * @return The authKey.
      */
     long getAuthKey();
 
     /**
-     * <code>bytes authValue = 2;</code>
+     * <code>bytes authValue = 3;</code>
      * @return The authValue.
      */
     com.google.protobuf.ByteString getAuthValue();
@@ -66,10 +72,21 @@ public final class Raft {
               com.gill.graft.proto.Raft.Auth.class, com.gill.graft.proto.Raft.Auth.Builder.class);
     }
 
-    public static final int AUTHKEY_FIELD_NUMBER = 1;
+    public static final int NODEID_FIELD_NUMBER = 1;
+    private int nodeId_ = 0;
+    /**
+     * <code>int32 nodeId = 1;</code>
+     * @return The nodeId.
+     */
+    @java.lang.Override
+    public int getNodeId() {
+      return nodeId_;
+    }
+
+    public static final int AUTHKEY_FIELD_NUMBER = 2;
     private long authKey_ = 0L;
     /**
-     * <code>int64 authKey = 1;</code>
+     * <code>int64 authKey = 2;</code>
      * @return The authKey.
      */
     @java.lang.Override
@@ -77,10 +94,10 @@ public final class Raft {
       return authKey_;
     }
 
-    public static final int AUTHVALUE_FIELD_NUMBER = 2;
+    public static final int AUTHVALUE_FIELD_NUMBER = 3;
     private com.google.protobuf.ByteString authValue_ = com.google.protobuf.ByteString.EMPTY;
     /**
-     * <code>bytes authValue = 2;</code>
+     * <code>bytes authValue = 3;</code>
      * @return The authValue.
      */
     @java.lang.Override
@@ -102,11 +119,14 @@ public final class Raft {
     @java.lang.Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
+      if (nodeId_ != 0) {
+        output.writeInt32(1, nodeId_);
+      }
       if (authKey_ != 0L) {
-        output.writeInt64(1, authKey_);
+        output.writeInt64(2, authKey_);
       }
       if (!authValue_.isEmpty()) {
-        output.writeBytes(2, authValue_);
+        output.writeBytes(3, authValue_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -117,13 +137,17 @@ public final class Raft {
       if (size != -1) return size;
 
       size = 0;
+      if (nodeId_ != 0) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(1, nodeId_);
+      }
       if (authKey_ != 0L) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(1, authKey_);
+          .computeInt64Size(2, authKey_);
       }
       if (!authValue_.isEmpty()) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, authValue_);
+          .computeBytesSize(3, authValue_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -140,6 +164,8 @@ public final class Raft {
       }
       com.gill.graft.proto.Raft.Auth other = (com.gill.graft.proto.Raft.Auth) obj;
 
+      if (getNodeId()
+          != other.getNodeId()) return false;
       if (getAuthKey()
           != other.getAuthKey()) return false;
       if (!getAuthValue()
@@ -155,6 +181,8 @@ public final class Raft {
       }
       int hash = 41;
       hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + NODEID_FIELD_NUMBER;
+      hash = (53 * hash) + getNodeId();
       hash = (37 * hash) + AUTHKEY_FIELD_NUMBER;
       hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
           getAuthKey());
@@ -291,6 +319,7 @@ public final class Raft {
       public Builder clear() {
         super.clear();
         bitField0_ = 0;
+        nodeId_ = 0;
         authKey_ = 0L;
         authValue_ = com.google.protobuf.ByteString.EMPTY;
         return this;
@@ -327,9 +356,12 @@ public final class Raft {
       private void buildPartial0(com.gill.graft.proto.Raft.Auth result) {
         int from_bitField0_ = bitField0_;
         if (((from_bitField0_ & 0x00000001) != 0)) {
-          result.authKey_ = authKey_;
+          result.nodeId_ = nodeId_;
         }
         if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.authKey_ = authKey_;
+        }
+        if (((from_bitField0_ & 0x00000004) != 0)) {
           result.authValue_ = authValue_;
         }
       }
@@ -378,6 +410,9 @@ public final class Raft {
 
       public Builder mergeFrom(com.gill.graft.proto.Raft.Auth other) {
         if (other == com.gill.graft.proto.Raft.Auth.getDefaultInstance()) return this;
+        if (other.getNodeId() != 0) {
+          setNodeId(other.getNodeId());
+        }
         if (other.getAuthKey() != 0L) {
           setAuthKey(other.getAuthKey());
         }
@@ -411,15 +446,20 @@ public final class Raft {
                 done = true;
                 break;
               case 8: {
-                authKey_ = input.readInt64();
+                nodeId_ = input.readInt32();
                 bitField0_ |= 0x00000001;
                 break;
               } // case 8
-              case 18: {
-                authValue_ = input.readBytes();
+              case 16: {
+                authKey_ = input.readInt64();
                 bitField0_ |= 0x00000002;
                 break;
-              } // case 18
+              } // case 16
+              case 26: {
+                authValue_ = input.readBytes();
+                bitField0_ |= 0x00000004;
+                break;
+              } // case 26
               default: {
                 if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                   done = true; // was an endgroup tag
@@ -437,9 +477,41 @@ public final class Raft {
       }
       private int bitField0_;
 
+      private int nodeId_ ;
+      /**
+       * <code>int32 nodeId = 1;</code>
+       * @return The nodeId.
+       */
+      @java.lang.Override
+      public int getNodeId() {
+        return nodeId_;
+      }
+      /**
+       * <code>int32 nodeId = 1;</code>
+       * @param value The nodeId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setNodeId(int value) {
+
+        nodeId_ = value;
+        bitField0_ |= 0x00000001;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>int32 nodeId = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearNodeId() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        nodeId_ = 0;
+        onChanged();
+        return this;
+      }
+
       private long authKey_ ;
       /**
-       * <code>int64 authKey = 1;</code>
+       * <code>int64 authKey = 2;</code>
        * @return The authKey.
        */
       @java.lang.Override
@@ -447,23 +519,23 @@ public final class Raft {
         return authKey_;
       }
       /**
-       * <code>int64 authKey = 1;</code>
+       * <code>int64 authKey = 2;</code>
        * @param value The authKey to set.
        * @return This builder for chaining.
        */
       public Builder setAuthKey(long value) {
 
         authKey_ = value;
-        bitField0_ |= 0x00000001;
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
       /**
-       * <code>int64 authKey = 1;</code>
+       * <code>int64 authKey = 2;</code>
        * @return This builder for chaining.
        */
       public Builder clearAuthKey() {
-        bitField0_ = (bitField0_ & ~0x00000001);
+        bitField0_ = (bitField0_ & ~0x00000002);
         authKey_ = 0L;
         onChanged();
         return this;
@@ -471,7 +543,7 @@ public final class Raft {
 
       private com.google.protobuf.ByteString authValue_ = com.google.protobuf.ByteString.EMPTY;
       /**
-       * <code>bytes authValue = 2;</code>
+       * <code>bytes authValue = 3;</code>
        * @return The authValue.
        */
       @java.lang.Override
@@ -479,23 +551,23 @@ public final class Raft {
         return authValue_;
       }
       /**
-       * <code>bytes authValue = 2;</code>
+       * <code>bytes authValue = 3;</code>
        * @param value The authValue to set.
        * @return This builder for chaining.
        */
       public Builder setAuthValue(com.google.protobuf.ByteString value) {
         if (value == null) { throw new NullPointerException(); }
         authValue_ = value;
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000004;
         onChanged();
         return this;
       }
       /**
-       * <code>bytes authValue = 2;</code>
+       * <code>bytes authValue = 3;</code>
        * @return This builder for chaining.
        */
       public Builder clearAuthValue() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000004);
         authValue_ = getDefaultInstance().getAuthValue();
         onChanged();
         return this;
@@ -569,7 +641,13 @@ public final class Raft {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>bool success = 1;</code>
+     * <code>int32 nodeId = 1;</code>
+     * @return The nodeId.
+     */
+    int getNodeId();
+
+    /**
+     * <code>bool success = 2;</code>
      * @return The success.
      */
     boolean getSuccess();
@@ -609,10 +687,21 @@ public final class Raft {
               com.gill.graft.proto.Raft.AuthResponse.class, com.gill.graft.proto.Raft.AuthResponse.Builder.class);
     }
 
-    public static final int SUCCESS_FIELD_NUMBER = 1;
+    public static final int NODEID_FIELD_NUMBER = 1;
+    private int nodeId_ = 0;
+    /**
+     * <code>int32 nodeId = 1;</code>
+     * @return The nodeId.
+     */
+    @java.lang.Override
+    public int getNodeId() {
+      return nodeId_;
+    }
+
+    public static final int SUCCESS_FIELD_NUMBER = 2;
     private boolean success_ = false;
     /**
-     * <code>bool success = 1;</code>
+     * <code>bool success = 2;</code>
      * @return The success.
      */
     @java.lang.Override
@@ -634,8 +723,11 @@ public final class Raft {
     @java.lang.Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
+      if (nodeId_ != 0) {
+        output.writeInt32(1, nodeId_);
+      }
       if (success_ != false) {
-        output.writeBool(1, success_);
+        output.writeBool(2, success_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -646,9 +738,13 @@ public final class Raft {
       if (size != -1) return size;
 
       size = 0;
+      if (nodeId_ != 0) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(1, nodeId_);
+      }
       if (success_ != false) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(1, success_);
+          .computeBoolSize(2, success_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -665,6 +761,8 @@ public final class Raft {
       }
       com.gill.graft.proto.Raft.AuthResponse other = (com.gill.graft.proto.Raft.AuthResponse) obj;
 
+      if (getNodeId()
+          != other.getNodeId()) return false;
       if (getSuccess()
           != other.getSuccess()) return false;
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
@@ -678,6 +776,8 @@ public final class Raft {
       }
       int hash = 41;
       hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + NODEID_FIELD_NUMBER;
+      hash = (53 * hash) + getNodeId();
       hash = (37 * hash) + SUCCESS_FIELD_NUMBER;
       hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
           getSuccess());
@@ -812,6 +912,7 @@ public final class Raft {
       public Builder clear() {
         super.clear();
         bitField0_ = 0;
+        nodeId_ = 0;
         success_ = false;
         return this;
       }
@@ -847,6 +948,9 @@ public final class Raft {
       private void buildPartial0(com.gill.graft.proto.Raft.AuthResponse result) {
         int from_bitField0_ = bitField0_;
         if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.nodeId_ = nodeId_;
+        }
+        if (((from_bitField0_ & 0x00000002) != 0)) {
           result.success_ = success_;
         }
       }
@@ -895,6 +999,9 @@ public final class Raft {
 
       public Builder mergeFrom(com.gill.graft.proto.Raft.AuthResponse other) {
         if (other == com.gill.graft.proto.Raft.AuthResponse.getDefaultInstance()) return this;
+        if (other.getNodeId() != 0) {
+          setNodeId(other.getNodeId());
+        }
         if (other.getSuccess() != false) {
           setSuccess(other.getSuccess());
         }
@@ -925,10 +1032,15 @@ public final class Raft {
                 done = true;
                 break;
               case 8: {
-                success_ = input.readBool();
+                nodeId_ = input.readInt32();
                 bitField0_ |= 0x00000001;
                 break;
               } // case 8
+              case 16: {
+                success_ = input.readBool();
+                bitField0_ |= 0x00000002;
+                break;
+              } // case 16
               default: {
                 if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                   done = true; // was an endgroup tag
@@ -946,9 +1058,41 @@ public final class Raft {
       }
       private int bitField0_;
 
+      private int nodeId_ ;
+      /**
+       * <code>int32 nodeId = 1;</code>
+       * @return The nodeId.
+       */
+      @java.lang.Override
+      public int getNodeId() {
+        return nodeId_;
+      }
+      /**
+       * <code>int32 nodeId = 1;</code>
+       * @param value The nodeId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setNodeId(int value) {
+
+        nodeId_ = value;
+        bitField0_ |= 0x00000001;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>int32 nodeId = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearNodeId() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        nodeId_ = 0;
+        onChanged();
+        return this;
+      }
+
       private boolean success_ ;
       /**
-       * <code>bool success = 1;</code>
+       * <code>bool success = 2;</code>
        * @return The success.
        */
       @java.lang.Override
@@ -956,23 +1100,23 @@ public final class Raft {
         return success_;
       }
       /**
-       * <code>bool success = 1;</code>
+       * <code>bool success = 2;</code>
        * @param value The success to set.
        * @return This builder for chaining.
        */
       public Builder setSuccess(boolean value) {
 
         success_ = value;
-        bitField0_ |= 0x00000001;
+        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
       /**
-       * <code>bool success = 1;</code>
+       * <code>bool success = 2;</code>
        * @return This builder for chaining.
        */
       public Builder clearSuccess() {
-        bitField0_ = (bitField0_ & ~0x00000001);
+        bitField0_ = (bitField0_ & ~0x00000002);
         success_ = false;
         onChanged();
         return this;
@@ -8313,31 +8457,32 @@ public final class Raft {
   static {
     java.lang.String[] descriptorData = {
       "\n\031src/main/proto/raft.proto\022\016com.gill.gr" +
-      "aft\"*\n\004Auth\022\017\n\007authKey\030\001 \001(\003\022\021\n\tauthValu" +
-      "e\030\002 \001(\014\"\037\n\014AuthResponse\022\017\n\007success\030\001 \001(\010" +
-      "\"=\n\007Request\022\021\n\trequestId\030\001 \001(\003\022\021\n\tservic" +
-      "eId\030\002 \001(\005\022\014\n\004data\030\003 \001(\014\"+\n\010Response\022\021\n\tr" +
-      "equestId\030\001 \001(\003\022\014\n\004data\030\002 \001(\014\")\n\tBasePara" +
-      "m\022\016\n\006nodeId\030\001 \001(\005\022\014\n\004term\030\002 \001(\003\"e\n\014PreVo" +
-      "teParam\022,\n\tbaseParam\030\001 \001(\0132\031.com.gill.gr" +
-      "aft.BaseParam\022\023\n\013lastLogTerm\030\002 \001(\003\022\022\n\nla" +
-      "stLogIdx\030\003 \001(\005\"i\n\020RequestVoteParam\022,\n\tba" +
-      "seParam\030\001 \001(\0132\031.com.gill.graft.BaseParam" +
-      "\022\023\n\013lastLogTerm\030\002 \001(\003\022\022\n\nlastLogIdx\030\003 \001(" +
-      "\005\"\367\001\n\025AppendLogEntriesParam\022,\n\tbaseParam" +
-      "\030\001 \001(\0132\031.com.gill.graft.BaseParam\022\022\n\npre" +
-      "LogTerm\030\002 \001(\003\022\021\n\tpreLogIdx\030\003 \001(\005\022\021\n\tcomm" +
-      "itIdx\030\004 \001(\005\022<\n\004logs\030\005 \003(\0132..com.gill.gra" +
-      "ft.AppendLogEntriesParam.LogEntry\0328\n\010Log" +
-      "Entry\022\r\n\005index\030\001 \001(\005\022\014\n\004term\030\002 \001(\003\022\017\n\007co" +
-      "mmand\030\003 \001(\014\"y\n\026ReplicateSnapshotParam\022,\n" +
-      "\tbaseParam\030\001 \001(\0132\031.com.gill.graft.BasePa" +
-      "ram\022\020\n\010applyIdx\030\002 \001(\005\022\021\n\tapplyTerm\030\003 \001(\003" +
-      "\022\014\n\004data\030\004 \001(\014\"&\n\005Reply\022\017\n\007success\030\001 \001(\010" +
-      "\022\014\n\004term\030\002 \001(\003\"`\n\016AppendLogReply\022$\n\005repl" +
-      "y\030\001 \001(\0132\025.com.gill.graft.Reply\022\024\n\014syncSn" +
-      "apshot\030\002 \001(\010\022\022\n\ncompareIdx\030\003 \001(\005B\026\n\024com." +
-      "gill.graft.protob\006proto3"
+      "aft\":\n\004Auth\022\016\n\006nodeId\030\001 \001(\005\022\017\n\007authKey\030\002" +
+      " \001(\003\022\021\n\tauthValue\030\003 \001(\014\"/\n\014AuthResponse\022" +
+      "\016\n\006nodeId\030\001 \001(\005\022\017\n\007success\030\002 \001(\010\"=\n\007Requ" +
+      "est\022\021\n\trequestId\030\001 \001(\003\022\021\n\tserviceId\030\002 \001(" +
+      "\005\022\014\n\004data\030\003 \001(\014\"+\n\010Response\022\021\n\trequestId" +
+      "\030\001 \001(\003\022\014\n\004data\030\002 \001(\014\")\n\tBaseParam\022\016\n\006nod" +
+      "eId\030\001 \001(\005\022\014\n\004term\030\002 \001(\003\"e\n\014PreVoteParam\022" +
+      ",\n\tbaseParam\030\001 \001(\0132\031.com.gill.graft.Base" +
+      "Param\022\023\n\013lastLogTerm\030\002 \001(\003\022\022\n\nlastLogIdx" +
+      "\030\003 \001(\005\"i\n\020RequestVoteParam\022,\n\tbaseParam\030" +
+      "\001 \001(\0132\031.com.gill.graft.BaseParam\022\023\n\013last" +
+      "LogTerm\030\002 \001(\003\022\022\n\nlastLogIdx\030\003 \001(\005\"\367\001\n\025Ap" +
+      "pendLogEntriesParam\022,\n\tbaseParam\030\001 \001(\0132\031" +
+      ".com.gill.graft.BaseParam\022\022\n\npreLogTerm\030" +
+      "\002 \001(\003\022\021\n\tpreLogIdx\030\003 \001(\005\022\021\n\tcommitIdx\030\004 " +
+      "\001(\005\022<\n\004logs\030\005 \003(\0132..com.gill.graft.Appen" +
+      "dLogEntriesParam.LogEntry\0328\n\010LogEntry\022\r\n" +
+      "\005index\030\001 \001(\005\022\014\n\004term\030\002 \001(\003\022\017\n\007command\030\003 " +
+      "\001(\014\"y\n\026ReplicateSnapshotParam\022,\n\tbasePar" +
+      "am\030\001 \001(\0132\031.com.gill.graft.BaseParam\022\020\n\010a" +
+      "pplyIdx\030\002 \001(\005\022\021\n\tapplyTerm\030\003 \001(\003\022\014\n\004data" +
+      "\030\004 \001(\014\"&\n\005Reply\022\017\n\007success\030\001 \001(\010\022\014\n\004term" +
+      "\030\002 \001(\003\"`\n\016AppendLogReply\022$\n\005reply\030\001 \001(\0132" +
+      "\025.com.gill.graft.Reply\022\024\n\014syncSnapshot\030\002" +
+      " \001(\010\022\022\n\ncompareIdx\030\003 \001(\005B\026\n\024com.gill.gra" +
+      "ft.protob\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -8348,13 +8493,13 @@ public final class Raft {
     internal_static_com_gill_graft_Auth_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_Auth_descriptor,
-        new java.lang.String[] { "AuthKey", "AuthValue", });
+        new java.lang.String[] { "NodeId", "AuthKey", "AuthValue", });
     internal_static_com_gill_graft_AuthResponse_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_com_gill_graft_AuthResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gill_graft_AuthResponse_descriptor,
-        new java.lang.String[] { "Success", });
+        new java.lang.String[] { "NodeId", "Success", });
     internal_static_com_gill_graft_Request_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_com_gill_graft_Request_fieldAccessorTable = new

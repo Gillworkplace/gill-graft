@@ -19,11 +19,8 @@ public class GlobalSocketChannelStatisticsHandler extends ChannelDuplexHandler {
 
 	private final AtomicInteger connCnt = new AtomicInteger(0);
 
-	private final int nodeId;
-
-	public GlobalSocketChannelStatisticsHandler(int nodeId, MetricsRegistry registry) {
-		this.nodeId = nodeId;
-		registry.register("connectionCount-" + nodeId, connCnt::get);
+	public GlobalSocketChannelStatisticsHandler(MetricsRegistry registry) {
+		registry.register("connectionCount", connCnt::get);
 	}
 
 	@Override

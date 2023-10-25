@@ -1,11 +1,11 @@
 package com.gill.graft.rpc.handler;
 
 import java.util.Arrays;
-import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.gill.graft.Node;
 import com.gill.graft.config.RaftConfig;
 import com.gill.graft.proto.Raft;
 import com.google.protobuf.ByteString;
@@ -14,6 +14,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.AttributeKey;
 
 /**
  * AuthHandler
@@ -26,10 +27,10 @@ public class AuthHandler extends SimpleChannelInboundHandler<Raft.Request> {
 
 	private static final Logger log = LoggerFactory.getLogger(AuthHandler.class);
 
-	private final Supplier<RaftConfig.AuthConfig> authConfigSupplier;
+	private final Node node;
 
-	public AuthHandler(Supplier<RaftConfig.AuthConfig> authConfigSupplier) {
-		this.authConfigSupplier = authConfigSupplier;
+	public AuthHandler(Node node) {
+		this.node = node;
 	}
 
 	@Override
@@ -37,10 +38,12 @@ public class AuthHandler extends SimpleChannelInboundHandler<Raft.Request> {
 		try {
 			long requestId = msg.getRequestId();
 			Raft.Auth auth = Raft.Auth.parseFrom(msg.getData());
-			RaftConfig.AuthConfig authConfig = authConfigSupplier.get();
+			RaftConfig.AuthConfig authConfig = node.getConfig().getAuthConfig();
 			Raft.Response.Builder responseBuilder = Raft.Response.newBuilder().setRequestId(requestId);
 			if (ignoreAuth(authConfig) || auth(auth, authConfig)) {
 				log.info("{} auth success", ctx.channel().remoteAddress());
+				AttributeKey<Integer> key = AttributeKey.valueOf("nodeId");
+				ctx.channel().attr(key).set(auth.getNodeId());
 				ctx.writeAndFlush(responseBuilder.setData(authR(true)).build());
 				return;
 			}
@@ -53,8 +56,8 @@ public class AuthHandler extends SimpleChannelInboundHandler<Raft.Request> {
 		ctx.close();
 	}
 
-	private static ByteString authR(boolean value) {
-		return Raft.AuthResponse.newBuilder().setSuccess(value).build().toByteString();
+	private ByteString authR(boolean value) {
+		return Raft.AuthResponse.newBuilder().setNodeId(node.getId()).setSuccess(value).build().toByteString();
 	}
 
 	private static boolean auth(Raft.Auth auth, RaftConfig.AuthConfig authConfig) {

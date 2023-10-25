@@ -3,6 +3,8 @@ package com.gill.graft.rpc;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jmx.JmxReporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MestricHandler
@@ -11,6 +13,8 @@ import com.codahale.metrics.jmx.JmxReporter;
  * @version 2023/10/19
  **/
 public class MetricsRegistry {
+
+	private final static Logger log = LoggerFactory.getLogger(MetricsRegistry.class);
 
 	private final MetricRegistry metricRegistry = new MetricRegistry();
 
@@ -21,6 +25,13 @@ public class MetricsRegistry {
 	public MetricsRegistry(int nodeId) {
 		this.nodeId = nodeId;
 		jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
+	}
+
+	/**
+	 * 启动jmxReporter
+	 */
+	public void start() {
+		log.info("{} jmx reporter start.", nodeId);
 		jmxReporter.start();
 	}
 
@@ -35,7 +46,8 @@ public class MetricsRegistry {
 	 *            类型
 	 */
 	public <T> void register(String name, Gauge<T> gauge) {
-		metricRegistry.remove(name);
+		log.info("{} jmx reporter register gauge: {}.", nodeId, name);
+		metricRegistry.remove(name + "-" + nodeId);
 		metricRegistry.register(name + "-" + nodeId, gauge);
 	}
 
@@ -43,6 +55,7 @@ public class MetricsRegistry {
 	 * 关闭jmx资源
 	 */
 	public void remove() {
+		log.info("{} jmx reporter close.", nodeId);
 		jmxReporter.close();
 	}
 }

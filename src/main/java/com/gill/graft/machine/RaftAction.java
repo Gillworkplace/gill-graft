@@ -18,9 +18,9 @@ import com.gill.graft.state.PreCandidate;
 public enum RaftAction {
 
 	/**
-	 * 初始化
+	 * 初始化为FOLLOWER
 	 */
-	INIT((node, params) -> Follower.init(node)),
+	INIT_FOLLOWER((node, params) -> Follower.init(node)),
 
 	/**
 	 * 停止

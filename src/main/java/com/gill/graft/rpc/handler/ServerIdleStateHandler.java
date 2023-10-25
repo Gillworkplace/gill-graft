@@ -29,7 +29,7 @@ public class ServerIdleStateHandler extends IdleStateHandler {
 	@Override
 	protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
 		if (evt == IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT) {
-			log.info("Idle check happen, nodeId: {}'s connection is closed", nodeId);
+			log.info("Idle check happen, {} => {}'s connection is closed", nodeId);
 			ctx.close();
 			return;
 		}

@@ -137,6 +137,19 @@ public abstract class BaseTest {
         }
     }
 
+    static void waitUtilStable(List<? extends TestMethod> nodes, long timeout) {
+        long time = System.currentTimeMillis();
+        while (System.currentTimeMillis() <= time + timeout) {
+            Optional<? extends TestMethod> leader = nodes.stream().filter(TestMethod::isLeader).findFirst();
+            if (leader.isPresent() && leader.get().isStable()) {
+                return;
+            }
+            sleep(10);
+        }
+        stopNodes(nodes);
+        Assertions.fail("timeout");
+    }
+
     static void assertAllLogs(List<? extends TestMethod> nodes, TestMethod... excludeNodes) {
         Optional<? extends TestMethod> leaderOpt = nodes.stream().filter(TestMethod::isLeader).findFirst();
         if (!leaderOpt.isPresent()) {

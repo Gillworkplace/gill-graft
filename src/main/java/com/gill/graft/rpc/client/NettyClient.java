@@ -3,12 +3,10 @@ package com.gill.graft.rpc.client;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -53,6 +51,8 @@ public class NettyClient {
 
 	private static final Logger log = LoggerFactory.getLogger(NettyClient.class);
 
+	private final int selfId;
+
 	private final String host;
 
 	private final int port;
@@ -64,6 +64,8 @@ public class NettyClient {
 	private final ThreadPoolExecutor executor;
 
 	private volatile Channel sc;
+
+	private volatile int remoteId = -1;
 
 	/**
 	 * 表示连接是否就绪，包括授权
@@ -82,21 +84,24 @@ public class NettyClient {
 	 */
 	private volatile boolean hasShutdown = false;
 
-	private final Semaphore continued = new Semaphore(0);
+	private final AtomicInteger connectionCnt = new AtomicInteger(0);
 
-	private final Lock channelLock = new ReentrantLock();
-
-	public NettyClient(String host, int port, Supplier<RaftConfig> supplyConfig) {
+	public NettyClient(int selfId, String host, int port, Supplier<RaftConfig> supplyConfig) {
+		this.selfId = selfId;
 		this.host = host;
 		this.port = port;
 		this.supplyConfig = supplyConfig;
 		this.executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<>(Collections.emptyList()), r -> new Thread(r, "netty-connector"),
+				new LinkedBlockingQueue<>(Collections.emptyList()), r -> new Thread(r, "netty-connector-" + selfId),
 				new ThreadPoolExecutor.DiscardPolicy());
 	}
 
 	private boolean isReady() {
 		return ready.get();
+	}
+
+	public int getRemoteId() {
+		return remoteId;
 	}
 
 	/**
@@ -109,17 +114,18 @@ public class NettyClient {
 	 * @return response bytes
 	 */
 	public byte[] request(int serviceId, byte[] requestB) {
-		if (!checkConnection()) {
-			log.error("connection is closed");
-			return Internal.EMPTY_BYTE_ARRAY;
-		}
-		Request request = new Request(serviceId, requestB);
-		try {
-			sc.writeAndFlush(request);
-			return Optional.ofNullable(request.getResponse(supplyConfig)).map(Response::getData)
-					.orElse(Internal.EMPTY_BYTE_ARRAY);
-		} catch (Exception e) {
-			log.error("request serviceId: {} failed, e: {}", serviceId, e.getMessage());
+		if (checkConnection()) {
+			Request request = new Request(serviceId, requestB);
+			try {
+				sc.writeAndFlush(request);
+				return Optional.ofNullable(request.getResponse(supplyConfig)).map(Response::getData)
+						.orElse(Internal.EMPTY_BYTE_ARRAY);
+			} catch (Exception e) {
+				log.error("request to {} {}:{} serviceId: {} failed, e: {}", getRemoteId(), host, port, serviceId,
+						e.getMessage());
+			}
+		} else {
+			log.error("connection to {}:{} is closed", host, port);
 		}
 		return Internal.EMPTY_BYTE_ARRAY;
 	}
@@ -135,6 +141,9 @@ public class NettyClient {
 					Utils.sleepQuietly(50);
 				}
 			}
+		}
+		if (!(isReady() && sc != null && sc.isOpen())) {
+			log.error("zzy isReady(): {} sc: {}, sc.isOpen(): {}", isReady(), sc, sc.isOpen());
 		}
 		return isReady() && sc != null && sc.isOpen();
 	}
@@ -153,28 +162,11 @@ public class NettyClient {
 		});
 	}
 
-	private void awaitConnection(Channel channel) {
-		if (channel != sc) {
-			return;
-		}
-		awaitChannel(channel);
-	}
-
-	private void awaitChannel(Channel channel) {
-		channelLock.lock();
-		try {
-			if (sc == channel) {
-				continued.release();
-			}
-		} finally {
-			channelLock.unlock();
-		}
-	}
-
 	/**
 	 * shutdown
 	 */
 	public void shutdownSync() {
+		log.info("{} => {} connection is stopping", selfId, remoteId);
 		shutdown = true;
 		dock.release();
 		executor.shutdownNow();
@@ -185,7 +177,7 @@ public class NettyClient {
 
 	private void doConnectAndPark() {
 		Bootstrap bs = new Bootstrap();
-		NioEventLoopGroup group = new NioEventLoopGroup(0, new DefaultThreadFactory("netty-client"));
+		NioEventLoopGroup group = new NioEventLoopGroup(1, new DefaultThreadFactory("netty-client"));
 		Channel c = null;
 		try {
 			bs.group(group).handler(new ClientInitializer(null));
@@ -195,35 +187,31 @@ public class NettyClient {
 				bs.channel(NioSocketChannel.class);
 			}
 			c = bs.connect(host, port).sync().channel();
+			connectionCnt.incrementAndGet();
 
 			// 进行连接授权与认证
 			auth(c);
-			disposeChannel(c);
-			continued.acquire();
+			sc = c;
+			c.closeFuture().sync();
+			log.warn("client to {} {}:{} closed", getRemoteId(), host, port);
 		} catch (InterruptedException e) {
-			log.error("{}:{} client interrupted, e: {}", host, port, e.getMessage());
+			log.warn("client to {} {}:{} interrupted, e: {}", getRemoteId(), host, port, e.getMessage());
 		} finally {
 			ready.set(false);
+			sc = null;
 			group.shutdownGracefully();
 			if (c != null) {
-				c.close();
+				try {
+					c.close();
+				} catch (Exception ignored) {
+				}
 			}
-		}
-	}
-
-	private void disposeChannel(Channel c) {
-		channelLock.lock();
-		try {
-			sc = c;
-			continued.drainPermits();
-		} finally {
-			channelLock.unlock();
 		}
 	}
 
 	private void auth(Channel c) {
 		RaftConfig.AuthConfig authConfig = supplyConfig.get().getAuthConfig();
-		Raft.Auth auth = Raft.Auth.newBuilder().setAuthKey(authConfig.getAuthKey())
+		Raft.Auth auth = Raft.Auth.newBuilder().setNodeId(selfId).setAuthKey(authConfig.getAuthKey())
 				.setAuthValue(ByteString.copyFrom(authConfig.getAuthValue())).build();
 		Raft.Request request = Raft.Request.newBuilder().setRequestId(authId).setServiceId(0)
 				.setData(auth.toByteString()).build();
@@ -262,12 +250,6 @@ public class NettyClient {
 			pl.addLast("authResponseHandler", authResponseHandler);
 			pl.addLast("responsePreHandler", responsePreHandler);
 		}
-
-		@Override
-		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-			awaitConnection(ctx.channel());
-			super.channelInactive(ctx);
-		}
 	}
 
 	@ChannelHandler.Sharable
@@ -280,7 +262,8 @@ public class NettyClient {
 				Raft.AuthResponse authResponse = Raft.AuthResponse.parseFrom(msg.getData());
 				if (requestId == authId && authResponse.getSuccess()) {
 					ready.compareAndSet(false, true);
-					log.info("connection to {}:{} success", host, port);
+					remoteId = authResponse.getNodeId();
+					log.info("{} connection to {} {}:{} success", selfId, remoteId, host, port);
 					return;
 				}
 				dock.release();
@@ -288,8 +271,17 @@ public class NettyClient {
 			} finally {
 				ctx.pipeline().remove(this);
 			}
-			log.error("connection auth failed by {}:{}", host, port);
+			log.error("{} connection auth failed by {}:{}", selfId, host, port);
 			ctx.close();
 		}
+	}
+
+	/**
+	 * 获取连接次数
+	 *
+	 * @return connectionCnt
+	 */
+	public int getConnectionCnt() {
+		return connectionCnt.get();
 	}
 }

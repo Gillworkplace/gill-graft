@@ -38,7 +38,7 @@ public class RaftMachine implements PrintService {
 	private volatile boolean running = true;
 
 	{
-		table.put(RaftState.STRANGER, RaftEvent.INIT, Target.of(ImmutableList.of(RaftAction.INIT), RaftState.FOLLOWER,
+		table.put(RaftState.STRANGER, RaftEvent.INIT, Target.of(ImmutableList.of(RaftAction.INIT_FOLLOWER), RaftState.FOLLOWER,
 				ImmutableList.of(RaftAction.POST_FOLLOWER)));
 
 		table.put(RaftState.FOLLOWER, RaftEvent.PING_TIMEOUT,
