@@ -249,10 +249,10 @@ public class NettyTest extends BaseTest {
 		Set<String> ports = nodes.stream().map(node -> node.getConfig().getPort()).map(String::valueOf)
 				.collect(Collectors.toSet());
 		sleep(10 * 1000);
-		printNetstat(ports);
+//		printNetstat(ports);
 		MockNettyNode leader = findLeader(nodes);
 		leader.stop();
-		printNetstat(ports);
+//		printNetstat(ports);
 		waitUtilLeaderStable(nodes, 10 * 1000);
 		System.out.println("========= TEST FINISHED =========");
 		stopNodes(nodes);

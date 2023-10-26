@@ -112,7 +112,7 @@ public class NettyServer implements Server {
 		CountDownLatch latch = new CountDownLatch(1);
 		executor.execute(() -> {
 			NioEventLoopGroup bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("boss-" + nodeId));
-			NioEventLoopGroup workerGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("worker-" + nodeId));
+			NioEventLoopGroup workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("worker-" + nodeId));
 			registerMetrics(bossGroup, workerGroup);
 			WorkerSocketChannelHandler workerHandler = new WorkerSocketChannelHandler(null);
 			try {

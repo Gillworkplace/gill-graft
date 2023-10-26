@@ -172,7 +172,7 @@ public class NettyClient {
 
 	private void doConnectAndPark() {
 		Bootstrap bs = new Bootstrap();
-		NioEventLoopGroup group = new NioEventLoopGroup(1, new DefaultThreadFactory("netty-client-" + nodeId));
+		NioEventLoopGroup group = new NioEventLoopGroup(0, new DefaultThreadFactory("netty-client-" + nodeId));
 		Channel c = null;
 		try {
 			bs.group(group);
