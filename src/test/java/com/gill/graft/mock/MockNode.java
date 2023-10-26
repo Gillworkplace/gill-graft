@@ -5,6 +5,10 @@ import java.util.List;
 import com.gill.graft.Node;
 import com.gill.graft.TestUtils;
 import com.gill.graft.apis.RaftRpcService;
+import com.gill.graft.apis.Server;
+import com.gill.graft.apis.empty.EmptyDataStorage;
+import com.gill.graft.apis.empty.EmptyLogStorage;
+import com.gill.graft.apis.empty.EmptyMetaStorage;
 import com.gill.graft.entity.AppendLogEntriesParam;
 import com.gill.graft.entity.AppendLogReply;
 import com.gill.graft.entity.PreVoteParam;
@@ -24,7 +28,22 @@ import com.gill.graft.model.LogEntry;
 public class MockNode extends Node implements TestMethod, RaftRpcService {
 
 	public MockNode(int id) {
-		super(id);
+		super(id, new EmptyMetaStorage(), new EmptyDataStorage(), new EmptyLogStorage(), node -> new Server() {
+			@Override
+			public boolean isReady() {
+				return true;
+			}
+
+			@Override
+			public void start() {
+
+			}
+
+			@Override
+			public void stop() {
+
+			}
+		});
 	}
 
 	public RaftMachine getRaftMachine() {
@@ -49,16 +68,6 @@ public class MockNode extends Node implements TestMethod, RaftRpcService {
 	@Override
 	public List<LogEntry> getLog() {
 		return getLogManager().getLogs(0, Integer.MAX_VALUE);
-	}
-
-	/**
-	 * 是否为就绪状态
-	 *
-	 * @return 就绪状态
-	 */
-	@Override
-	public boolean isMachineReady() {
-		return true;
 	}
 
 	/**

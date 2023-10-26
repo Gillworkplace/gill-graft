@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.gill.graft.Node;
 import com.gill.graft.apis.RaftRpcService;
+import com.gill.graft.apis.Server;
 import com.gill.graft.apis.empty.EmptyLogStorage;
 import com.gill.graft.apis.empty.EmptyMetaStorage;
 import com.gill.graft.model.ProposeReply;
@@ -23,7 +24,34 @@ public class IntMapServer {
 	private final IntMapCommandSerializer serializer = new IntMapCommandSerializer();
 
 	public IntMapServer(int id) {
-		this.node = new Node(id, new EmptyMetaStorage(), dataStorage, new EmptyLogStorage());
+		this.node = new Node(id, new EmptyMetaStorage(), dataStorage, new EmptyLogStorage(), node -> new Server() {
+
+			/**
+			 * 是否可以对外提供服务
+			 *
+			 * @return 是否
+			 */
+			@Override
+			public boolean isReady() {
+				return true;
+			}
+
+			/**
+			 * 启动服务器
+			 */
+			@Override
+			public void start() {
+
+			}
+
+			/**
+			 * 停止服务器
+			 */
+			@Override
+			public void stop() {
+
+			}
+		});
 	}
 
 	/**
