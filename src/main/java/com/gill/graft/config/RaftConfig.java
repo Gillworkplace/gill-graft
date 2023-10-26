@@ -12,10 +12,6 @@ public class RaftConfig {
 
 	private int port = 8160;
 
-	private long connectTimeout = 5 * 1000L;
-
-	private long requestTimeout = 30 * 1000L;
-
 	private long heartbeatInterval = 100L;
 
 	private long baseTimeoutInterval = 300L;
@@ -32,28 +28,14 @@ public class RaftConfig {
 
 	private AuthConfig authConfig = new AuthConfig();
 
+	private NettyConfig nettyConfig = new NettyConfig();
+
 	public int getPort() {
 		return port;
 	}
 
 	public void setPort(int port) {
 		this.port = port;
-	}
-
-	public long getConnectTimeout() {
-		return connectTimeout;
-	}
-
-	public void setConnectTimeout(long connectTimeout) {
-		this.connectTimeout = connectTimeout;
-	}
-
-	public long getRequestTimeout() {
-		return requestTimeout;
-	}
-
-	public void setRequestTimeout(long requestTimeout) {
-		this.requestTimeout = requestTimeout;
 	}
 
 	public long getHeartbeatInterval() {
@@ -120,6 +102,14 @@ public class RaftConfig {
 		this.authConfig = authConfig;
 	}
 
+	public NettyConfig getNettyConfig() {
+		return nettyConfig;
+	}
+
+	public void setNettyConfig(NettyConfig nettyConfig) {
+		this.nettyConfig = nettyConfig;
+	}
+
 	@Override
 	public String toString() {
 		return "RaftConfig{" + "heartbeatInterval=" + heartbeatInterval + ", baseTimeoutInterval=" + baseTimeoutInterval
@@ -165,6 +155,39 @@ public class RaftConfig {
 
 		public void setAuthValue(byte[] authValue) {
 			this.authValue = authValue;
+		}
+	}
+
+	public static class NettyConfig {
+
+		private long connectTimeout = 5 * 1000L;
+
+		private long requestTimeout = 30 * 1000L;
+
+		private long readerIdleTime = 10 * 1000L;
+
+		public long getConnectTimeout() {
+			return connectTimeout;
+		}
+
+		public void setConnectTimeout(long connectTimeout) {
+			this.connectTimeout = connectTimeout;
+		}
+
+		public long getRequestTimeout() {
+			return requestTimeout;
+		}
+
+		public void setRequestTimeout(long requestTimeout) {
+			this.requestTimeout = requestTimeout;
+		}
+
+		public long getReaderIdleTime() {
+			return readerIdleTime;
+		}
+
+		public void setReaderIdleTime(long readerIdleTime) {
+			this.readerIdleTime = readerIdleTime;
 		}
 	}
 }

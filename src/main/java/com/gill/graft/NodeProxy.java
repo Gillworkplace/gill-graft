@@ -79,7 +79,7 @@ public class NodeProxy implements Runnable, PrintService {
 	 * 启动
 	 */
 	public void start() {
-		running = true;
+		this.running = true;
 		this.executor.execute(this);
 	}
 
@@ -87,7 +87,7 @@ public class NodeProxy implements Runnable, PrintService {
 	 * 停止
 	 */
 	public void stop() {
-		running = false;
+		this.running = false;
 		this.executor.shutdownNow();
 		Utils.awaitTermination(this.executor, "proxy-" + self.getId() + "-" + follower.getId());
 	}

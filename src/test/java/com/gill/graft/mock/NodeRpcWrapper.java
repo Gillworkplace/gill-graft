@@ -23,6 +23,16 @@ public class NodeRpcWrapper implements RaftRpcService {
 		this.node = node;
 	}
 
+	/**
+	 * 是否为就绪状态
+	 *
+	 * @return 就绪状态
+	 */
+	@Override
+	public boolean isReady() {
+		return true;
+	}
+
 	@Override
 	public int getId() {
 		return node.getId();

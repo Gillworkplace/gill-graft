@@ -53,7 +53,7 @@ public class Request {
 	 *            配置
 	 * @return 结果
 	 */
-	public Response getResponse(Supplier<RaftConfig> supplyConfig) {
+	public Response getResponse(Supplier<RaftConfig.NettyConfig> supplyConfig) {
 		try {
 			return cf.get(supplyConfig.get().getRequestTimeout(), TimeUnit.MILLISECONDS);
 		} catch (Exception ignored) {

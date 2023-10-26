@@ -2,7 +2,6 @@ package com.gill.graft;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
@@ -53,7 +52,7 @@ public class IntMapTest extends BaseTest {
 		for (MockIntMapServer server : servers) {
 			server.start(getFollowers(rpcNodes, server.getNode()));
 		}
-		waitUtilStable(servers);
+		waitUtilLeaderStable(servers);
 		assertCluster(servers);
 		System.out.println("============ INIT NODES FINISHED ===============");
 		return servers;

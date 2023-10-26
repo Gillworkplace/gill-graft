@@ -26,13 +26,25 @@ public class NettyRpcService implements RaftRpcService {
 	private final AtomicInteger nodeId = new AtomicInteger(-1);
 
 	public NettyRpcService(Node node, String host, int port) {
-		this.client = new NettyClient(node.getId(), host, port, node::getConfig);
+		this.client = new NettyClient(node.getId(), host, port, () -> node.getConfig().getNettyConfig(),
+				() -> node.getConfig().getAuthConfig());
 		this.client.connect();
 	}
 
 	public NettyRpcService(String host, int port, Supplier<RaftConfig> raftConfigSupplier) {
-		this.client = new NettyClient(-1, host, port, raftConfigSupplier);
+		this.client = new NettyClient(-1, host, port, raftConfigSupplier.get()::getNettyConfig,
+				raftConfigSupplier.get()::getAuthConfig);
 		this.client.connect();
+	}
+
+	/**
+	 * 是否为就绪状态
+	 *
+	 * @return 就绪状态
+	 */
+	@Override
+	public boolean isReady() {
+		return client.isReady();
 	}
 
 	/**
@@ -42,9 +54,9 @@ public class NettyRpcService implements RaftRpcService {
 	 */
 	@Override
 	public int getId() {
-		if(nodeId.get() == -1) {
+		if (nodeId.get() == -1) {
 			synchronized (nodeId) {
-				if(nodeId.get() == -1) {
+				if (nodeId.get() == -1) {
 					this.nodeId.set(client.getRemoteId());
 				}
 			}

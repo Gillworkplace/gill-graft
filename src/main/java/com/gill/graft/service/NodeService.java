@@ -13,11 +13,18 @@ import com.gill.graft.apis.RaftRpcService;
 public interface NodeService {
 
 	/**
-	 * 是否准备完成
+	 * 是否状态机是否准备就绪
 	 * 
-	 * @return 是否准备完成
+	 * @return 是否
 	 */
-	boolean ready();
+	boolean isMachineReady();
+
+	/**
+	 * server是否准备继续
+	 * 
+	 * @return 是否
+	 */
+	boolean isServerReady();
 
 	/**
 	 * 启动节点

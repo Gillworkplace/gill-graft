@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import com.gill.graft.apis.DataStorage;
 import com.gill.graft.apis.LogStorage;
 import com.gill.graft.apis.MetaStorage;
 import com.gill.graft.apis.RaftRpcService;
+import com.gill.graft.apis.Server;
 import com.gill.graft.apis.empty.EmptyDataStorage;
 import com.gill.graft.apis.empty.EmptyLogStorage;
 import com.gill.graft.apis.empty.EmptyMetaStorage;
@@ -64,7 +66,15 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	private final AtomicInteger committedIdx = new AtomicInteger(0);
 
+	/**
+	 * 状态机状态是否稳定 稳定：收到更高版本的心跳包; leader的op请求过半数成功响应 不稳定：心跳检测超时; leader的心跳包过半数发送失败
+	 */
 	private final AtomicBoolean stable = new AtomicBoolean(false);
+
+	/**
+	 * 节点是否启动完成
+	 */
+	private final AtomicBoolean initialized = new AtomicBoolean(false);
 
 	private final HeartbeatState heartbeatState = new HeartbeatState(0, 0);
 
@@ -101,7 +111,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	private final MetricsRegistry metricsRegistry;
 
-	private final NettyServer server = new NettyServer(this);
+	private final Server server;
 
 	/**
 	 * 集群属性
@@ -109,35 +119,29 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	private List<RaftRpcService> followers = Collections.emptyList();
 
 	public Node() {
-		this.id = RandomUtil.randomInt(100, 200);
-		this.metaDataManager = new MetaDataManager(new EmptyMetaStorage());
-		this.dataStorage = new EmptyDataStorage();
-		this.logManager = new LogManager(new EmptyLogStorage(), this.config.getLogConfig());
-		this.metricsRegistry = new MetricsRegistry(this.id);
+		this(RandomUtil.randomInt(100, 200));
 	}
 
 	public Node(MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
-		this.id = RandomUtil.randomInt(100, 200);
-		this.metaDataManager = new MetaDataManager(metaStorage);
-		this.dataStorage = dataStorage;
-		this.logManager = new LogManager(logStorage, this.config.getLogConfig());
-		this.metricsRegistry = new MetricsRegistry(this.id);
+		this(RandomUtil.randomInt(100, 200), metaStorage, dataStorage, logStorage);
 	}
 
 	public Node(int id) {
-		this.id = id;
-		this.metaDataManager = new MetaDataManager(new EmptyMetaStorage());
-		this.dataStorage = new EmptyDataStorage();
-		this.logManager = new LogManager(new EmptyLogStorage(), this.config.getLogConfig());
-		this.metricsRegistry = new MetricsRegistry(this.id);
+		this(id, new EmptyMetaStorage(), new EmptyDataStorage(), new EmptyLogStorage());
 	}
 
 	public Node(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
+		this(id, metaStorage, dataStorage, logStorage, NettyServer::new);
+	}
+
+	public Node(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage,
+			Function<Node, Server> serverFactory) {
 		this.id = id;
 		this.metaDataManager = new MetaDataManager(metaStorage);
 		this.dataStorage = dataStorage;
 		this.logManager = new LogManager(logStorage, this.config.getLogConfig());
 		this.metricsRegistry = new MetricsRegistry(this.id);
+		this.server = serverFactory.apply(this);
 	}
 
 	public long getTerm() {
@@ -180,11 +184,23 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	}
 
 	public void stable() {
-		stable.compareAndSet(false, true);
+		stable.set(true);
 	}
 
 	public void unstable() {
-		stable.compareAndSet(true, false);
+		stable.set(false);
+	}
+
+	public boolean isInitialized() {
+		return initialized.get();
+	}
+
+	private void initialized() {
+		initialized.set(true);
+	}
+
+	private void uninitialized() {
+		initialized.set(false);
 	}
 
 	private void loadData() {
@@ -293,8 +309,18 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	}
 
 	@Override
-	public boolean ready() {
-		return machine.isReady();
+	public boolean isMachineReady() {
+		return machine.isReady() && isInitialized();
+	}
+
+	/**
+	 * server是否准备继续
+	 *
+	 * @return 是否
+	 */
+	@Override
+	public boolean isServerReady() {
+		return server.isReady();
 	}
 
 	private boolean unlatestLog(long lastLogTerm, long lastLogIdx) {
@@ -470,21 +496,16 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	@Override
 	public synchronized void start(List<RaftRpcService> followers) {
-		start(followers, false, null);
+		start(followers, null);
 	}
 
-	public synchronized void start(List<RaftRpcService> followers, boolean useDefaultServer) {
-		start(followers, useDefaultServer, null);
-	}
-
-	public synchronized void start(List<RaftRpcService> followers, boolean useDefaultServer, Integer priority) {
+	public synchronized void start(List<RaftRpcService> followers, Integer priority) {
+		uninitialized();
 		calcPriority(priority);
 		this.followers = followers;
-		if (useDefaultServer) {
 
-			// 启动netty server
-			this.server.start(this.config.getPort());
-		}
+		// 启动netty server
+		this.server.start();
 
 		// 注册指标数据
 		this.metricsRegistry.start();
@@ -500,6 +521,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 		// 启动快照定时器
 		schedulers.getSnapshotScheduler().start(this.dataStorage, this.config);
+		initialized();
 	}
 
 	private void releaseOldFollowers() {
@@ -520,9 +542,10 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	@Override
 	public synchronized void stop() {
-		schedulers.getSnapshotScheduler().stop();
+		uninitialized();
 		this.publishEvent(RaftEvent.STOP, new RaftEventParams(Integer.MAX_VALUE, true));
 		this.machine.stop();
+		schedulers.getSnapshotScheduler().stop();
 		this.metricsRegistry.remove();
 		releaseOldFollowers();
 		this.server.stop();
@@ -535,7 +558,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	@Override
 	public ProposeReply propose(String command) {
-		if (!ready() || machine.getState() != RaftState.LEADER) {
+		if (!isMachineReady() || machine.getState() != RaftState.LEADER) {
 			return new ProposeReply(-1);
 		}
 		log.debug("node: {} propose {}", id, command);

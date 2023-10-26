@@ -1,9 +1,11 @@
 package com.gill.graft;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
@@ -50,7 +52,7 @@ public class NettyTest extends BaseTest {
 		RaftConfig.AuthConfig authConfig = raftConfig.getAuthConfig();
 		authConfig.setAuthKey(1);
 		authConfig.setAuthValue(new byte[]{79, 23, 12});
-		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
+		NettyRpcService service = newNettyRpcService(HOST, port, () -> raftConfig, true);
 		int id = service.getId();
 		Assertions.assertEquals(0, id);
 		node.stop();
@@ -64,7 +66,7 @@ public class NettyTest extends BaseTest {
 		RaftConfig.AuthConfig authConfig = raftConfig.getAuthConfig();
 		authConfig.setAuthKey(1);
 		authConfig.setAuthValue(new byte[]{79, 23, 12});
-		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
+		NettyRpcService service = newNettyRpcService(HOST, port, () -> raftConfig, false);
 		int id = Utils.cost(service::getId, "getId");
 		Assertions.assertEquals(-1, id);
 		node.stop();
@@ -78,7 +80,7 @@ public class NettyTest extends BaseTest {
 		RaftConfig.AuthConfig authConfig = raftConfig.getAuthConfig();
 		authConfig.setAuthKey(1);
 		authConfig.setAuthValue(new byte[]{79, 23, 12});
-		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
+		NettyRpcService service = newNettyRpcService(HOST, port, () -> raftConfig, false);
 		int id = Utils.cost(service::getId, "getId");
 		Assertions.assertEquals(-1, id);
 		node.stop();
@@ -88,7 +90,7 @@ public class NettyTest extends BaseTest {
 	public void testGetId() {
 		Node node = genNode();
 		int port = node.getConfig().getPort();
-		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
+		NettyRpcService service = newNettyRpcService(HOST, port, RaftConfig::new, true);
 		int id = service.getId();
 		Assertions.assertEquals(0, id);
 		node.stop();
@@ -98,7 +100,7 @@ public class NettyTest extends BaseTest {
 	public void testPreVote() {
 		Node node = genNode();
 		int port = node.getConfig().getPort();
-		NettyRpcService service = new NettyRpcService(node, HOST, port);
+		NettyRpcService service = newNettyRpcService(HOST, port, RaftConfig::new, true);
 		PreVoteParam param = new PreVoteParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0);
 		Reply reply = service.preVote(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
@@ -110,7 +112,7 @@ public class NettyTest extends BaseTest {
 	public void testRequestVote() {
 		Node node = genNode();
 		int port = node.getConfig().getPort();
-		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
+		NettyRpcService service = newNettyRpcService(HOST, port, RaftConfig::new, true);
 		RequestVoteParam param = new RequestVoteParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0);
 		Reply reply = service.requestVote(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
@@ -122,7 +124,7 @@ public class NettyTest extends BaseTest {
 	public void testHeartbeat() {
 		Node node = genNode();
 		int port = node.getConfig().getPort();
-		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
+		NettyRpcService service = newNettyRpcService(HOST, port, RaftConfig::new, true);
 		AppendLogEntriesParam param = new AppendLogEntriesParam(MOCK_NODE_ID, MOCK_NODE_TERM);
 		AppendLogReply reply = service.appendLogEntries(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
@@ -134,7 +136,7 @@ public class NettyTest extends BaseTest {
 	public void testAppendLogEntries() {
 		Node node = genNode();
 		int port = node.getConfig().getPort();
-		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
+		NettyRpcService service = newNettyRpcService(HOST, port, RaftConfig::new, true);
 		LogEntry logEntry = new LogEntry(1, MOCK_NODE_TERM, "");
 		AppendLogEntriesParam param = new AppendLogEntriesParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0, 0,
 				Collections.singletonList(logEntry));
@@ -148,7 +150,7 @@ public class NettyTest extends BaseTest {
 	public void testReplicateSnapshot() {
 		Node node = genNode();
 		int port = node.getConfig().getPort();
-		NettyRpcService service = new NettyRpcService(HOST, port, RaftConfig::new);
+		NettyRpcService service = newNettyRpcService(HOST, port, RaftConfig::new, true);
 		ReplicateSnapshotParam param = new ReplicateSnapshotParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0,
 				Internal.EMPTY_BYTE_ARRAY);
 		Reply reply = service.replicateSnapshot(param);
@@ -173,26 +175,76 @@ public class NettyTest extends BaseTest {
 		stopNodes(nodes);
 	}
 
-	// @RepeatedTest(10)
+	@Test
+	public void testReconnect() {
+		Node node = genNode();
+		int port = node.getConfig().getPort();
+		node.getConfig().getNettyConfig().setReaderIdleTime(3000);
+		NettyRpcService service = newNettyRpcService(HOST, port, RaftConfig::new, true);
+		try {
+			Assertions.assertTimeoutPreemptively(Duration.ofMillis(3500), () -> {
+				while (true) {
+					if (!service.isReady()) {
+						return;
+					}
+					sleep(10);
+				}
+			}, "not happen idle");
+			service.preVote(new PreVoteParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0));
+			Assertions.assertTimeoutPreemptively(Duration.ofMillis(5000), () -> {
+				while (true) {
+					if (service.isReady()) {
+						return;
+					}
+					sleep(10);
+				}
+			}, "cannot reconnect");
+			Reply reply = service.preVote(new PreVoteParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0, 0));
+			Assertions.assertTrue(reply.isSuccess());
+		} catch (Exception e) {
+			node.stop();
+			throw e;
+		}
+	}
+
 	@Test
 	public void testRestart() {
 		List<MockNettyNode> nodes = nodesInitUntilStable(3);
-		sleep(10 * 1000);
 		MockNettyNode leader = findLeader(nodes);
 		leader.stop();
-		waitUtilStable(nodes);
-		sleep(10 * 1000);
+		waitUtilLeaderStable(nodes, 10 * 1000);
 		System.out.println("============ RE-ELECTION FINISHED =============");
-		leader.start(getFollowers(nodes, leader));
-		waitUtilStable(nodes);
+
+		// wait idle
 		sleep(10 * 1000);
+		leader.start(getFollowers(nodes, leader));
+		System.out.println("============ RESTART FINISHED =============");
+		waitUtilAllReady(nodes, 10 * 1000);
 		assertCluster(nodes);
+		final MockNettyNode leader2 = findLeader(nodes);
+		System.out.println("============ WAIT TO RECONNECT =============");
+		try {
+			Assertions.assertTimeoutPreemptively(Duration.ofMillis(5000), () -> {
+				outer : while (true) {
+					for (RaftRpcService service : leader2.getFollowers()) {
+						if (!service.isReady()) {
+							sleep(10);
+							continue outer;
+						}
+					}
+					return;
+				}
+			}, "exists disconnection service");
+		} catch (Exception e) {
+			stopNodes(nodes);
+			throw e;
+		}
 		System.out.println("============ TEST FINISHED =============");
 		stopNodes(nodes);
 	}
 
-	@Test
-	public void testRecoverFromIdle() {
+	@RepeatedTest(3)
+	public void testSPOF() {
 		List<MockNettyNode> nodes = nodesInitUntilStable(3);
 		Set<String> ports = nodes.stream().map(node -> node.getConfig().getPort()).map(String::valueOf)
 				.collect(Collectors.toSet());
@@ -201,7 +253,7 @@ public class NettyTest extends BaseTest {
 		MockNettyNode leader = findLeader(nodes);
 		leader.stop();
 		printNetstat(ports);
-		waitUtilStable(nodes, 10 * 1000);
+		waitUtilLeaderStable(nodes, 10 * 1000);
 		System.out.println("========= TEST FINISHED =========");
 		stopNodes(nodes);
 	}
@@ -222,7 +274,7 @@ public class NettyTest extends BaseTest {
 		Node node = new Node(0);
 		int freePort = BaseTest.findFreePort();
 		node.getConfig().setPort(freePort);
-		node.start(Collections.emptyList(), true);
+		node.start(Collections.emptyList());
 		return node;
 	}
 
@@ -232,7 +284,7 @@ public class NettyTest extends BaseTest {
 		node.getConfig().setPort(freePort);
 		node.getConfig().getAuthConfig().setAuthKey(authKey);
 		node.getConfig().getAuthConfig().setAuthValue(authValue);
-		node.start(Collections.emptyList(), true);
+		node.start(Collections.emptyList());
 		return node;
 	}
 
@@ -252,6 +304,22 @@ public class NettyTest extends BaseTest {
 				.collect(Collectors.toList());
 	}
 
+	private NettyRpcService newNettyRpcService(String host, int port, Supplier<RaftConfig> raftConfigSupplier,
+			boolean assertion) {
+		NettyRpcService service = new NettyRpcService(host, port, raftConfigSupplier);
+		long start = System.currentTimeMillis();
+		while (start + 200L >= System.currentTimeMillis()) {
+			if (service.isReady()) {
+				return service;
+			}
+			sleep(10);
+		}
+		if (assertion) {
+			Assertions.fail("netty rpc service connect failed");
+		}
+		return service;
+	}
+
 	private List<MockNettyNode> nodesInitUntilStable(int num) {
 		return nodesInitUntilStable(num, null);
 	}
@@ -261,13 +329,28 @@ public class NettyTest extends BaseTest {
 		for (MockNettyNode node : nodes) {
 			List<RaftRpcService> followers = getFollowers(nodes, node);
 			if (defaultPriority == null) {
-				node.start(followers, true);
+				node.start(followers);
 			} else {
-				node.start(followers, true, defaultPriority);
+				node.start(followers, defaultPriority);
 			}
 		}
-		waitUtilStable(nodes);
+		waitUtilLeaderStable(nodes);
 		assertCluster(nodes);
 		return nodes;
+	}
+
+	private static void waitUtilAllReady(List<MockNettyNode> nodes, long timeout) {
+		long time = System.currentTimeMillis();
+		outer : while (System.currentTimeMillis() <= time + timeout) {
+			for (MockNettyNode node : nodes) {
+				if (!node.isReadiness()) {
+					sleep(10);
+					continue outer;
+				}
+			}
+			return;
+		}
+		stopNodes(nodes);
+		Assertions.fail("ready timeout");
 	}
 }

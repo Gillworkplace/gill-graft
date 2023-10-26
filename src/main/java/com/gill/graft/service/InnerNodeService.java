@@ -31,7 +31,7 @@ public interface InnerNodeService extends NodeService {
 	 * @return Reply
 	 */
 	default Reply preVote(PreVoteParam param) {
-		if (!ready()) {
+		if (!isMachineReady()) {
 			return new Reply(false, -1);
 		}
 		return Utils.cost(() -> doPreVote(param), "pre-vote");
@@ -54,7 +54,7 @@ public interface InnerNodeService extends NodeService {
 	 * @return Reply
 	 */
 	default Reply requestVote(RequestVoteParam param) {
-		if (!ready()) {
+		if (!isMachineReady()) {
 			return new Reply(false, -1);
 		}
 		return Utils.cost(() -> doRequestVote(param), "request-vote");
@@ -77,7 +77,7 @@ public interface InnerNodeService extends NodeService {
 	 * @return Reply
 	 */
 	default AppendLogReply appendLogEntries(AppendLogEntriesParam param) {
-		if (!ready()) {
+		if (!isMachineReady()) {
 			return new AppendLogReply(false, -1);
 		}
 		return Utils.cost(() -> doAppendLogEntries(param), "append-log-entries");
@@ -100,7 +100,7 @@ public interface InnerNodeService extends NodeService {
 	 * @return 响应
 	 */
 	default Reply replicateSnapshot(ReplicateSnapshotParam param) {
-		if (!ready()) {
+		if (!isMachineReady()) {
 			return new AppendLogReply(false, -1);
 		}
 		return Utils.cost(() -> doReplicateSnapshot(param), "replicate-snapshot");

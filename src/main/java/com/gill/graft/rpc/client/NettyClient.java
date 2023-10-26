@@ -20,25 +20,24 @@ import com.gill.graft.rpc.codec.Request;
 import com.gill.graft.rpc.codec.RequestEncoder;
 import com.gill.graft.rpc.codec.Response;
 import com.gill.graft.rpc.codec.ResponseDecoder;
+import com.gill.graft.rpc.handler.AuthResponseHandler;
 import com.gill.graft.rpc.handler.SharableChannelHandler;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Internal;
-import com.google.protobuf.InvalidProtocolBufferException;
 
 import cn.hutool.core.util.RandomUtil;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
-import io.netty.handler.ssl.SslContext;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
 /**
@@ -51,13 +50,17 @@ public class NettyClient {
 
 	private static final Logger log = LoggerFactory.getLogger(NettyClient.class);
 
-	private final int selfId;
+	private final int nodeId;
+
+	private volatile int remoteId = -1;
 
 	private final String host;
 
 	private final int port;
 
-	private final Supplier<RaftConfig> supplyConfig;
+	private final Supplier<RaftConfig.NettyConfig> nettyConfig;
+
+	private final Supplier<RaftConfig.AuthConfig> authConfig;
 
 	private final ConnectionDock dock = new ConnectionDock();
 
@@ -65,14 +68,10 @@ public class NettyClient {
 
 	private volatile Channel sc;
 
-	private volatile int remoteId = -1;
-
 	/**
 	 * 表示连接是否就绪，包括授权
 	 */
 	private final AtomicBoolean ready = new AtomicBoolean(false);
-
-	private final long authId = RandomUtil.randomLong();
 
 	/**
 	 * 连接loop是否跳出循环
@@ -86,22 +85,28 @@ public class NettyClient {
 
 	private final AtomicInteger connectionCnt = new AtomicInteger(0);
 
-	public NettyClient(int selfId, String host, int port, Supplier<RaftConfig> supplyConfig) {
-		this.selfId = selfId;
+	public NettyClient(int nodeId, String host, int port, Supplier<RaftConfig.NettyConfig> nettyConfig,
+			Supplier<RaftConfig.AuthConfig> authConfig) {
+		this.nodeId = nodeId;
 		this.host = host;
 		this.port = port;
-		this.supplyConfig = supplyConfig;
+		this.nettyConfig = nettyConfig;
+		this.authConfig = authConfig;
 		this.executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<>(Collections.emptyList()), r -> new Thread(r, "netty-connector-" + selfId),
+				new LinkedBlockingQueue<>(Collections.emptyList()), r -> new Thread(r, "netty-connector-" + nodeId),
 				new ThreadPoolExecutor.DiscardPolicy());
 	}
 
-	private boolean isReady() {
-		return ready.get();
+	public void ready() {
+		ready.set(true);
 	}
 
-	public int getRemoteId() {
-		return remoteId;
+	private void notReady() {
+		ready.set(false);
+	}
+
+	public boolean isReady() {
+		return ready.get();
 	}
 
 	/**
@@ -118,7 +123,7 @@ public class NettyClient {
 			Request request = new Request(serviceId, requestB);
 			try {
 				sc.writeAndFlush(request);
-				return Optional.ofNullable(request.getResponse(supplyConfig)).map(Response::getData)
+				return Optional.ofNullable(request.getResponse(nettyConfig)).map(Response::getData)
 						.orElse(Internal.EMPTY_BYTE_ARRAY);
 			} catch (Exception e) {
 				log.error("request to {} {}:{} serviceId: {} failed, e: {}", getRemoteId(), host, port, serviceId,
@@ -132,18 +137,8 @@ public class NettyClient {
 
 	private boolean checkConnection() {
 		if (sc == null || !sc.isOpen()) {
-			synchronized (this) {
-				long now = System.currentTimeMillis();
-				while (!isReady() && System.currentTimeMillis() <= now + supplyConfig.get().getConnectTimeout()) {
-
-					// 线程池的有且只有一个任务，多余的任务会被discard掉，因此不需担心重复执行。
-					connect();
-					Utils.sleepQuietly(50);
-				}
-			}
-		}
-		if (!(isReady() && sc != null && sc.isOpen())) {
-			log.error("zzy isReady(): {} sc: {}, sc.isOpen(): {}", isReady(), sc, sc.isOpen());
+			connect();
+			Utils.sleepQuietly(50);
 		}
 		return isReady() && sc != null && sc.isOpen();
 	}
@@ -166,7 +161,7 @@ public class NettyClient {
 	 * shutdown
 	 */
 	public void shutdownSync() {
-		log.info("{} => {} connection is stopping", selfId, remoteId);
+		log.info("{} => {} connection is stopping", nodeId, remoteId);
 		shutdown = true;
 		dock.release();
 		executor.shutdownNow();
@@ -177,30 +172,58 @@ public class NettyClient {
 
 	private void doConnectAndPark() {
 		Bootstrap bs = new Bootstrap();
-		NioEventLoopGroup group = new NioEventLoopGroup(1, new DefaultThreadFactory("netty-client"));
+		NioEventLoopGroup group = new NioEventLoopGroup(1, new DefaultThreadFactory("netty-client-" + nodeId));
 		Channel c = null;
 		try {
-			bs.group(group).handler(new ClientInitializer(null));
-			if (Utils.isLinux()) {
-				bs.channel(EpollSocketChannel.class);
-			} else {
-				bs.channel(NioSocketChannel.class);
-			}
-			c = bs.connect(host, port).sync().channel();
-			connectionCnt.incrementAndGet();
+			bs.group(group);
+			setOptions(bs);
+			setChannel(bs);
 
-			// 进行连接授权与认证
-			auth(c);
-			sc = c;
-			c.closeFuture().sync();
-			log.warn("client to {} {}:{} closed", getRemoteId(), host, port);
+			long authId = RandomUtil.randomLong();
+			RequestEncoder requestPreHandler = new RequestEncoder(dock);
+			AuthResponseHandler authResponseHandler = new AuthResponseHandler(this, authId);
+			ResponseDecoder responsePreHandler = new ResponseDecoder(dock);
+			bs.handler(new ChannelInitializer<SocketChannel>() {
+
+				@Override
+				protected void initChannel(SocketChannel sc) {
+					ChannelPipeline pl = sc.pipeline();
+
+					// out
+					pl.addLast("protobufFrameEncoder", SharableChannelHandler.PROTOBUF_FRAME_ENCODER);
+					pl.addLast("protobufProtocolEncoder", SharableChannelHandler.PROTOBUF_PROTOCOL_ENCODER);
+					pl.addLast("requestPreHandler", requestPreHandler);
+
+					// in
+					pl.addLast("protobufFrameDecoder", new ProtobufVarint32FrameDecoder());
+					pl.addLast("protobufProtocolDecoder", SharableChannelHandler.PROTOBUF_PROTOCOL_DECODER_RESPONSE);
+					pl.addLast("authResponseHandler", authResponseHandler);
+					pl.addLast("responsePreHandler", responsePreHandler);
+				}
+			});
+			ChannelFuture cf = bs.connect(host, port);
+			boolean ret = cf.awaitUninterruptibly(nettyConfig.get().getConnectTimeout(), TimeUnit.MILLISECONDS);
+			if (ret && cf.isSuccess()) {
+				connectionCnt.incrementAndGet();
+				log.info("connection to {}:{} is successful", host, port);
+				c = cf.channel();
+
+				// 进行连接授权与认证
+				auth(c, authId);
+				sc = c;
+				c.closeFuture().sync();
+				log.warn("client to {} {}:{} is closed", getRemoteId(), host, port);
+			} else {
+				Throwable cause = cf.cause();
+				log.error("connection to {}:{} is failed, cause: {}", host, port, cause.getMessage());
+			}
 		} catch (InterruptedException e) {
 			log.warn("client to {} {}:{} interrupted, e: {}", getRemoteId(), host, port, e.getMessage());
 		} finally {
-			ready.set(false);
+			notReady();
 			sc = null;
-			group.shutdownGracefully();
-			if (c != null) {
+			group.shutdownGracefully().syncUninterruptibly();
+			if (c != null && c.isOpen()) {
 				try {
 					c.close();
 				} catch (Exception ignored) {
@@ -209,71 +232,25 @@ public class NettyClient {
 		}
 	}
 
-	private void auth(Channel c) {
-		RaftConfig.AuthConfig authConfig = supplyConfig.get().getAuthConfig();
-		Raft.Auth auth = Raft.Auth.newBuilder().setNodeId(selfId).setAuthKey(authConfig.getAuthKey())
-				.setAuthValue(ByteString.copyFrom(authConfig.getAuthValue())).build();
+	private void setChannel(Bootstrap bs) {
+		if (Utils.isLinux()) {
+			bs.channel(EpollSocketChannel.class);
+		} else {
+			bs.channel(NioSocketChannel.class);
+		}
+	}
+
+	private void setOptions(Bootstrap bs) {
+		bs.option(ChannelOption.TCP_NODELAY, true).option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+	}
+
+	private void auth(Channel c, long authId) {
+		RaftConfig.AuthConfig config = authConfig.get();
+		Raft.Auth auth = Raft.Auth.newBuilder().setNodeId(nodeId).setAuthKey(config.getAuthKey())
+				.setAuthValue(ByteString.copyFrom(config.getAuthValue())).build();
 		Raft.Request request = Raft.Request.newBuilder().setRequestId(authId).setServiceId(0)
 				.setData(auth.toByteString()).build();
 		c.writeAndFlush(request);
-	}
-
-	class ClientInitializer extends ChannelInitializer<SocketChannel> {
-
-		private final SslContext sslCtx;
-
-		private final RequestEncoder requestPreHandler = new RequestEncoder(dock);
-
-		private final AuthResponseHandler authResponseHandler = new AuthResponseHandler();
-
-		private final ResponseDecoder responsePreHandler = new ResponseDecoder(dock);
-
-		public ClientInitializer(SslContext sslCtx) {
-			this.sslCtx = sslCtx;
-		}
-
-		@Override
-		protected void initChannel(SocketChannel sc) {
-			ChannelPipeline pl = sc.pipeline();
-			if (sslCtx != null) {
-				pl.addLast("SSL", sslCtx.newHandler(sc.alloc()));
-			}
-
-			// out
-			pl.addLast("protobufFrameEncoder", SharableChannelHandler.PROTOBUF_FRAME_ENCODER);
-			pl.addLast("protobufProtocolEncoder", SharableChannelHandler.PROTOBUF_PROTOCOL_ENCODER);
-			pl.addLast("requestPreHandler", requestPreHandler);
-
-			// in
-			pl.addLast("protobufFrameDecoder", new ProtobufVarint32FrameDecoder());
-			pl.addLast("protobufProtocolDecoder", SharableChannelHandler.PROTOBUF_PROTOCOL_DECODER_RESPONSE);
-			pl.addLast("authResponseHandler", authResponseHandler);
-			pl.addLast("responsePreHandler", responsePreHandler);
-		}
-	}
-
-	@ChannelHandler.Sharable
-	class AuthResponseHandler extends SimpleChannelInboundHandler<Raft.Response> {
-
-		@Override
-		protected void channelRead0(ChannelHandlerContext ctx, Raft.Response msg) {
-			long requestId = msg.getRequestId();
-			try {
-				Raft.AuthResponse authResponse = Raft.AuthResponse.parseFrom(msg.getData());
-				if (requestId == authId && authResponse.getSuccess()) {
-					ready.compareAndSet(false, true);
-					remoteId = authResponse.getNodeId();
-					log.info("{} connection to {} {}:{} success", selfId, remoteId, host, port);
-					return;
-				}
-				dock.release();
-			} catch (InvalidProtocolBufferException ignore) {
-			} finally {
-				ctx.pipeline().remove(this);
-			}
-			log.error("{} connection auth failed by {}:{}", selfId, host, port);
-			ctx.close();
-		}
 	}
 
 	/**
@@ -283,5 +260,29 @@ public class NettyClient {
 	 */
 	public int getConnectionCnt() {
 		return connectionCnt.get();
+	}
+
+	public int getRemoteId() {
+		return remoteId;
+	}
+
+	public void setRemoteId(int remoteId) {
+		this.remoteId = remoteId;
+	}
+
+	public int getNodeId() {
+		return nodeId;
+	}
+
+	public String getHost() {
+		return host;
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+	public ConnectionDock getDock() {
+		return dock;
 	}
 }

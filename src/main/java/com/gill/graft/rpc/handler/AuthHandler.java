@@ -1,11 +1,11 @@
 package com.gill.graft.rpc.handler;
 
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.gill.graft.Node;
 import com.gill.graft.config.RaftConfig;
 import com.gill.graft.proto.Raft;
 import com.google.protobuf.ByteString;
@@ -27,10 +27,13 @@ public class AuthHandler extends SimpleChannelInboundHandler<Raft.Request> {
 
 	private static final Logger log = LoggerFactory.getLogger(AuthHandler.class);
 
-	private final Node node;
+	private final int nodeId;
 
-	public AuthHandler(Node node) {
-		this.node = node;
+	private final Supplier<RaftConfig.AuthConfig> authConfig;
+
+	public AuthHandler(int nodeId, Supplier<RaftConfig.AuthConfig> authConfig) {
+		this.nodeId = nodeId;
+		this.authConfig = authConfig;
 	}
 
 	@Override
@@ -38,12 +41,11 @@ public class AuthHandler extends SimpleChannelInboundHandler<Raft.Request> {
 		try {
 			long requestId = msg.getRequestId();
 			Raft.Auth auth = Raft.Auth.parseFrom(msg.getData());
-			RaftConfig.AuthConfig authConfig = node.getConfig().getAuthConfig();
+			RaftConfig.AuthConfig config = authConfig.get();
 			Raft.Response.Builder responseBuilder = Raft.Response.newBuilder().setRequestId(requestId);
-			if (ignoreAuth(authConfig) || auth(auth, authConfig)) {
+			if (ignoreAuth(config) || auth(auth, config)) {
 				log.info("{} auth success", ctx.channel().remoteAddress());
-				AttributeKey<Integer> key = AttributeKey.valueOf("nodeId");
-				ctx.channel().attr(key).set(auth.getNodeId());
+				ctx.channel().attr(AttributeKey.<Integer>valueOf("nodeId")).set(auth.getNodeId());
 				ctx.writeAndFlush(responseBuilder.setData(authR(true)).build());
 				return;
 			}
@@ -57,7 +59,7 @@ public class AuthHandler extends SimpleChannelInboundHandler<Raft.Request> {
 	}
 
 	private ByteString authR(boolean value) {
-		return Raft.AuthResponse.newBuilder().setNodeId(node.getId()).setSuccess(value).build().toByteString();
+		return Raft.AuthResponse.newBuilder().setNodeId(nodeId).setSuccess(value).build().toByteString();
 	}
 
 	private static boolean auth(Raft.Auth auth, RaftConfig.AuthConfig authConfig) {

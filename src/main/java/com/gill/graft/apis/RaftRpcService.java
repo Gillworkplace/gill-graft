@@ -16,6 +16,13 @@ import com.gill.graft.entity.RequestVoteParam;
 public interface RaftRpcService {
 
 	/**
+	 * 是否为就绪状态
+	 * 
+	 * @return 就绪状态
+	 */
+	boolean isReady();
+
+	/**
 	 * 获取id
 	 *
 	 * @return id

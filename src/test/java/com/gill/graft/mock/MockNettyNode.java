@@ -5,13 +5,6 @@ import java.util.List;
 import com.gill.graft.BaseTest;
 import com.gill.graft.Node;
 import com.gill.graft.TestUtils;
-import com.gill.graft.apis.RaftRpcService;
-import com.gill.graft.entity.AppendLogEntriesParam;
-import com.gill.graft.entity.AppendLogReply;
-import com.gill.graft.entity.PreVoteParam;
-import com.gill.graft.entity.ReplicateSnapshotParam;
-import com.gill.graft.entity.Reply;
-import com.gill.graft.entity.RequestVoteParam;
 import com.gill.graft.machine.RaftMachine;
 import com.gill.graft.machine.RaftState;
 import com.gill.graft.model.LogEntry;
@@ -27,6 +20,10 @@ public class MockNettyNode extends Node implements TestMethod {
 	public MockNettyNode(int id) {
 		super(id);
 		this.getConfig().setPort(BaseTest.findFreePort());
+	}
+
+	public boolean isReadiness() {
+		return isMachineReady() && isServerReady();
 	}
 
 	public RaftMachine getRaftMachine() {

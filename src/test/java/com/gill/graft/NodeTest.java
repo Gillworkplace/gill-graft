@@ -49,10 +49,10 @@ public class NodeTest extends BaseTest {
 			if (defaultPriority == null) {
 				node.start(followers);
 			} else {
-				node.start(followers, false, defaultPriority);
+				node.start(followers, defaultPriority);
 			}
 		}
-		waitUtilStable(nodes);
+		waitUtilLeaderStable(nodes);
 		assertCluster(nodes);
 		return nodes;
 	}
@@ -116,7 +116,7 @@ public class NodeTest extends BaseTest {
 		System.out.println("remove leader " + leader.getId());
 		leader.stop();
 		long start = System.currentTimeMillis();
-		waitUtilStable(nodes);
+		waitUtilLeaderStable(nodes);
 		System.out.println("cost: " + (System.currentTimeMillis() - start));
 		assertCluster(nodes);
 		System.out.println("============ TEST FINISHED =============");
@@ -178,7 +178,7 @@ public class NodeTest extends BaseTest {
 		originLeader.stop();
 		System.out.println("============ LEADER STOPPED =============");
 		follower.start(getFollowers(nodes, follower));
-		waitUtilStable(nodes);
+		waitUtilLeaderStable(nodes);
 		MockNode newLeader = findLeader(nodes);
 		System.out.println("============ FIND NEW LEADER =============");
 		originLeader.start(getFollowers(nodes, originLeader));
@@ -197,7 +197,7 @@ public class NodeTest extends BaseTest {
 		originLeader.propose("1");
 		originLeader.stop();
 		System.out.println("============ LEADER STOPPED =============");
-		waitUtilStable(nodes);
+		waitUtilLeaderStable(nodes);
 		MockNode newLeader = findLeader(nodes);
 		System.out.println("============ FIND NEW LEADER =============");
 		Assertions.assertEquals(4, (int) newLeader.propose("2").getIdx());

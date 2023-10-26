@@ -2,12 +2,14 @@ package com.gill.graft.rpc.handler;
 
 import java.util.concurrent.TimeUnit;
 
+import com.gill.graft.config.RaftConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.AttributeKey;
 
 /**
  * ServerIdleStateHandler
@@ -21,15 +23,16 @@ public class ServerIdleStateHandler extends IdleStateHandler {
 
 	private final int nodeId;
 
-	public ServerIdleStateHandler(int nodeId) {
-		super(10, 0, 0, TimeUnit.SECONDS);
+	public ServerIdleStateHandler(int nodeId, long readerIdleTime) {
+		super(readerIdleTime, 0, 0, TimeUnit.MILLISECONDS);
 		this.nodeId = nodeId;
 	}
 
 	@Override
 	protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
 		if (evt == IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT) {
-			log.info("Idle check happen, {} => {}'s connection is closed", nodeId);
+			Integer remoteId = ctx.channel().attr(AttributeKey.<Integer>valueOf("nodeId")).get();
+			log.info("Idle check happen, {} => {}'s connection is closed", remoteId, nodeId);
 			ctx.close();
 			return;
 		}

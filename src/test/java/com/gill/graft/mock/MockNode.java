@@ -1,10 +1,7 @@
 package com.gill.graft.mock;
 
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.List;
 
-import com.gill.graft.BaseTest;
 import com.gill.graft.Node;
 import com.gill.graft.TestUtils;
 import com.gill.graft.apis.RaftRpcService;
@@ -14,12 +11,9 @@ import com.gill.graft.entity.PreVoteParam;
 import com.gill.graft.entity.ReplicateSnapshotParam;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.entity.RequestVoteParam;
-import com.gill.graft.machine.RaftEvent;
-import com.gill.graft.machine.RaftEventParams;
 import com.gill.graft.machine.RaftMachine;
 import com.gill.graft.machine.RaftState;
 import com.gill.graft.model.LogEntry;
-import com.gill.graft.scheduler.SnapshotScheduler;
 
 /**
  * MockNode
@@ -55,6 +49,26 @@ public class MockNode extends Node implements TestMethod, RaftRpcService {
 	@Override
 	public List<LogEntry> getLog() {
 		return getLogManager().getLogs(0, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * 是否为就绪状态
+	 *
+	 * @return 就绪状态
+	 */
+	@Override
+	public boolean isMachineReady() {
+		return true;
+	}
+
+	/**
+	 * 是否为就绪状态
+	 *
+	 * @return 就绪状态
+	 */
+	@Override
+	public boolean isReady() {
+		return true;
 	}
 
 	@Override
