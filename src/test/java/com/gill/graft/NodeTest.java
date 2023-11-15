@@ -61,7 +61,7 @@ public class NodeTest extends BaseTest {
 		List<MockNode> nodes = new ArrayList<>();
 		int offset = RandomUtil.randomInt(1000) * 100;
 		for (int i = 0; i < num; i++) {
-			nodes.add(new MockNode(offset + i));
+			nodes.add(MockNode.newNode(offset + i));
 		}
 		System.out.println("offset: " + offset);
 		return nodes;

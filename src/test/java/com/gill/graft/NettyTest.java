@@ -271,7 +271,7 @@ public class NettyTest extends BaseTest {
 	}
 
 	private Node genNode() {
-		Node node = new Node(0);
+		Node node = Node.newNode(0);
 		int freePort = BaseTest.findFreePort();
 		node.getConfig().setPort(freePort);
 		node.start(Collections.emptyList());
@@ -279,7 +279,7 @@ public class NettyTest extends BaseTest {
 	}
 
 	private Node genNode(long authKey, byte[] authValue) {
-		Node node = new Node(0);
+		Node node = Node.newNode(0);
 		int freePort = BaseTest.findFreePort();
 		node.getConfig().setPort(freePort);
 		node.getConfig().getAuthConfig().setAuthKey(authKey);
@@ -292,7 +292,7 @@ public class NettyTest extends BaseTest {
 		List<MockNettyNode> nodes = new ArrayList<>();
 		int offset = RandomUtil.randomInt(1000) * 100;
 		for (int i = 0; i < num; i++) {
-			nodes.add(new MockNettyNode(offset + i));
+			nodes.add(MockNettyNode.newNode(offset + i));
 		}
 		System.out.println("offset: " + offset);
 		return nodes;

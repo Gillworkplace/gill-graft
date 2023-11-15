@@ -27,8 +27,13 @@ import com.gill.graft.model.LogEntry;
  **/
 public class MockNode extends Node implements TestMethod, RaftRpcService {
 
-	public MockNode(int id) {
-		super(id, new EmptyMetaStorage(), new EmptyDataStorage(), new EmptyLogStorage(), node -> new Server() {
+	private MockNode(int id) {
+		super(id, new EmptyMetaStorage(), new EmptyDataStorage(), new EmptyLogStorage());
+	}
+
+	public static MockNode newNode(int id) {
+		MockNode node = new MockNode(id);
+		TestUtils.setField(node, "server", new Server() {
 			@Override
 			public boolean isReady() {
 				return true;
@@ -44,6 +49,7 @@ public class MockNode extends Node implements TestMethod, RaftRpcService {
 
 			}
 		});
+		return node;
 	}
 
 	public RaftMachine getRaftMachine() {

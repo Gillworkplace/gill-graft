@@ -24,7 +24,7 @@ public class IntMapServer {
 	private final IntMapCommandSerializer serializer = new IntMapCommandSerializer();
 
 	public IntMapServer(int id) {
-		this.node = new Node(id, new EmptyMetaStorage(), dataStorage, new EmptyLogStorage(), node -> new Server() {
+		this.node = Node.newNode(id, new EmptyMetaStorage(), dataStorage, new EmptyLogStorage(), node -> new Server() {
 
 			/**
 			 * 是否可以对外提供服务

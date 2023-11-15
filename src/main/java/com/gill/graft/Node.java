@@ -9,6 +9,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
+import com.gill.graft.rpc.server.NettyServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,6 @@ import com.gill.graft.model.ProposeReply;
 import com.gill.graft.proto.RaftConverter;
 import com.gill.graft.rpc.MetricsRegistry;
 import com.gill.graft.rpc.ServiceRegistry;
-import com.gill.graft.rpc.server.NettyServer;
 import com.gill.graft.service.InnerNodeService;
 import com.gill.graft.service.PrintService;
 import com.gill.graft.service.RaftService;
@@ -111,37 +111,67 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	private final MetricsRegistry metricsRegistry;
 
-	private final Server server;
+	private Server server;
 
 	/**
 	 * 集群属性
 	 */
 	private List<RaftRpcService> followers = Collections.emptyList();
 
-	public Node() {
+	protected Node() {
 		this(RandomUtil.randomInt(100, 200));
 	}
 
-	public Node(MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
+	protected Node(MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
 		this(RandomUtil.randomInt(100, 200), metaStorage, dataStorage, logStorage);
 	}
 
-	public Node(int id) {
+	protected Node(int id) {
 		this(id, new EmptyMetaStorage(), new EmptyDataStorage(), new EmptyLogStorage());
 	}
 
-	public Node(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
-		this(id, metaStorage, dataStorage, logStorage, NettyServer::new);
-	}
-
-	public Node(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage,
-			Function<Node, Server> serverFactory) {
+	protected Node(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
 		this.id = id;
 		this.metaDataManager = new MetaDataManager(metaStorage);
 		this.dataStorage = dataStorage;
 		this.logManager = new LogManager(logStorage, this.config.getLogConfig());
 		this.metricsRegistry = new MetricsRegistry(this.id);
-		this.server = serverFactory.apply(this);
+	}
+
+	public static Node newNode() {
+		Node node = new Node();
+		node.setServer(new NettyServer(node));
+		return node;
+	}
+
+	public static Node newNode(MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
+		Node node = new Node(metaStorage, dataStorage, logStorage);
+		node.setServer(new NettyServer(node));
+		return node;
+	}
+
+	public static Node newNode(int id) {
+		Node node = new Node(id);
+		node.setServer(new NettyServer(node));
+		return node;
+	}
+
+	public static Node newNode(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
+		Node node = new Node(id, metaStorage, dataStorage, logStorage);
+		node.setServer(new NettyServer(node));
+		return node;
+	}
+
+	public static Node newNode(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage,
+			Function<Node, Server> serverFactory) {
+		Node node = new Node(id, metaStorage, dataStorage, logStorage);
+		Server server = serverFactory.apply(node);
+		node.setServer(server);
+		return node;
+	}
+
+	private void setServer(Server server) {
+		this.server = server;
 	}
 
 	public long getTerm() {
