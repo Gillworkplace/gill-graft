@@ -2,11 +2,10 @@ package com.gill.graft;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.LockSupport;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -18,6 +17,7 @@ import com.gill.graft.common.Utils;
 import com.gill.graft.entity.AppendLogReply;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.model.LogEntry;
+import com.gill.graft.model.ProposeReply;
 import com.gill.graft.service.PrintService;
 
 /**
@@ -30,61 +30,26 @@ public class ProposeHelper implements PrintService {
 
 	private static final Logger log = LoggerFactory.getLogger(ProposeHelper.class);
 
-	private final ConcurrentSkipListMap<Integer, WaitLogEntry> proposeQueue = new ConcurrentSkipListMap<>();
-
 	private List<NodeProxy> followerProxies = Collections.emptyList();
 
 	private final Supplier<ExecutorService> apiPoolSupplier;
 
-	@Override
-	public String println() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("propose queue: ").append(proposeQueue).append(System.lineSeparator());
-		sb.append("followerProxies: ").append(System.lineSeparator());
-		for (NodeProxy proxy : followerProxies) {
-			sb.append(proxy.println());
-		}
-		return sb.toString();
-	}
+	private final ApplyWorker applyWorker;
 
-	private static class WaitLogEntry {
-
-		private final Thread thread;
-
-		private final LogEntry logEntry;
-
-		public WaitLogEntry(Thread thread, LogEntry logEntry) {
-			this.thread = thread;
-			this.logEntry = logEntry;
-		}
-
-		public Thread getThread() {
-			return thread;
-		}
-
-		public LogEntry getLogEntry() {
-			return logEntry;
-		}
-
-		@Override
-		public String toString() {
-			return "WaitLogEntry{" + "thread=" + thread + ", logEntry=" + logEntry + '}';
-		}
-	}
-
-	public ProposeHelper(Supplier<ExecutorService> apiPoolSupplier) {
+	public ProposeHelper(Supplier<ExecutorService> apiPoolSupplier, ApplyWorker applyWorker) {
 		this.apiPoolSupplier = apiPoolSupplier;
+		this.applyWorker = applyWorker;
 	}
 
 	/**
 	 * 启动
-	 * 
+	 *
 	 * @param node
 	 *            节点
 	 * @param followers
 	 *            从者
 	 * @param preLogIdx
-	 *            日志索引
+	 *            leader节点启动时最后的日志索引位置
 	 */
 	public void start(Node node, List<RaftRpcService> followers, int preLogIdx) {
 		List<NodeProxy> proxies = followers.stream().map(follower -> new NodeProxy(node, follower, preLogIdx))
@@ -111,38 +76,56 @@ public class ProposeHelper implements PrintService {
 	 * 
 	 * @param logEntry
 	 *            日志
-	 * @return 是否成功
+	 * @return 结果
 	 */
-	public int propose(LogEntry logEntry, Runnable dataStorageApplier) {
+	public ProposeReply propose(LogEntry logEntry, Consumer<Integer> commitIdx) {
+
+		// 注册apply的同步器
 		int logIdx = logEntry.getIndex();
-		proposeQueue.put(logIdx, new WaitLogEntry(Thread.currentThread(), logEntry));
+		CompletableFuture<Object> cf = applyWorker.registerApplyCallback(logIdx);
+
+		// 完成集群共识
 		boolean success = Utils.majorityCall(followerProxies, proxy -> {
 			AppendLogReply reply = new AppendLogReply(false, -1);
 			try {
 				reply = proxy.appendLog(logEntry);
 				return reply;
 			} catch (Exception e) {
-				log.error("call propose to {} failed, logEntry: {}, e: {}", proxy.getID(), logEntry, e.getMessage());
+				log.error("call propose to {} failed, logEntry: {}, e: {}", proxy.getId(), logEntry, e.getMessage());
 			}
-			log.error("call propose to {} failed, logEntry: {}, reply: {}", proxy.getID(), logEntry, reply);
+			log.error("call propose to {} failed, logEntry: {}, reply: {}", proxy.getId(), logEntry, reply);
 			return reply;
 		}, Reply::isSuccess, apiPoolSupplier.get(), "propose");
+
+		// 正常情况下都为success，只有网络分区或者超时导致失败
+		ProposeReply reply = new ProposeReply(logIdx);
 		if (success) {
-			int count = 0;
-			while (proposeQueue.firstKey() != logIdx) {
-				if (count++ >= 16) {
-					LockSupport.park();
-				}
+
+			// 更新commitIdx并等待apply结果
+			commitIdx.accept(logIdx);
+			reply.setSuccess(true);
+			try {
+				reply.setData(cf.get());
+			} catch (InterruptedException | ExecutionException e) {
+				log.warn("the propose that waiting apply is Interrupted, e: {}", e.getMessage());
 			}
-			dataStorageApplier.run();
 		} else {
 			log.warn("propose failed, logEntry: {}", logEntry);
+			reply.setSuccess(false);
+			reply.setException("cluster propose failed");
 		}
-		proposeQueue.remove(logIdx);
-		Map.Entry<Integer, WaitLogEntry> nextEntry = proposeQueue.firstEntry();
-		if (nextEntry != null) {
-			LockSupport.unpark(nextEntry.getValue().getThread());
+
+		// propose响应失败不代表真的失败
+		return reply;
+	}
+
+	@Override
+	public String println() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("followerProxies: ").append(System.lineSeparator());
+		for (NodeProxy proxy : followerProxies) {
+			sb.append(proxy.println());
 		}
-		return success ? logIdx : -1;
+		return sb.toString();
 	}
 }

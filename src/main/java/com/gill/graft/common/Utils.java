@@ -6,7 +6,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,27 +27,6 @@ public class Utils {
 	public static final String SYNC = "SYNC";
 
 	public static final int CPU_CORES = Runtime.getRuntime().availableProcessors();
-
-	/**
-	 * 耗时计算
-	 * 
-	 * @param func
-	 *            方法
-	 * @param funcName
-	 *            方法名
-	 * @return 返回结果
-	 * @param <T>
-	 *            类型
-	 */
-	public static <T> T cost(Supplier<T> func, String funcName) {
-		long start = System.currentTimeMillis();
-		T ret = func.get();
-		long end = System.currentTimeMillis();
-		if (end - start > 0) {
-			log.debug("{} cost {}ms", funcName, end - start);
-		}
-		return ret;
-	}
 
 	/**
 	 * 睡眠
@@ -134,5 +112,27 @@ public class Utils {
 	 */
 	public static boolean isLinux() {
 		return System.getProperty("os.name").toLowerCase().contains("linux");
+	}
+
+	/**
+	 * 是否为空字符串
+	 * 
+	 * @param str
+	 *            str
+	 * @return boolean
+	 */
+	public static boolean isEmpty(String str) {
+		return str == null || str.isEmpty();
+	}
+
+	/**
+	 * 是否为非空字符串
+	 * 
+	 * @param str
+	 *            str
+	 * @return boolean
+	 */
+	public static boolean isNotEmpty(String str) {
+		return !isEmpty(str);
 	}
 }

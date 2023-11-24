@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import com.gill.graft.common.Utils;
 import com.gill.graft.model.Snapshot;
 
+import javafx.util.Pair;
+
 /**
  * VersionDataStorage
  *
@@ -19,22 +21,56 @@ public abstract class VersionDataStorage<T> implements DataStorage {
 
 	private static final Logger log = LoggerFactory.getLogger(VersionDataStorage.class);
 
-	private long applyTerm = 0;
+	private volatile int lastSnapshotApplyIdx = 0;
 
-	private int applyIdx = 0;
+	private volatile long applyTerm = 0;
+
+	private volatile int applyIdx = 0;
 
 	private final Lock lock = new ReentrantLock();
 
 	@Override
-	public int getApplyIdx() {
+	public final int loadSnapshot() {
+		Pair<Long, Integer> pair = loadApplyTermAndIdx();
+		applyTerm = pair.getKey();
+		applyIdx = pair.getValue();
+		lastSnapshotApplyIdx = pair.getValue();
+		loadData();
+		return 0;
+	}
+
+	/**
+	 * 加载快照应用的索引位置与版本
+	 * 
+	 * @return 版本, 索引位置
+	 */
+	protected abstract Pair<Long, Integer> loadApplyTermAndIdx();
+
+	/**
+	 * 加载数据
+	 */
+	protected abstract void loadData();
+
+	@Override
+	public final int getApplyIdx() {
 		return applyIdx;
+	}
+
+	/**
+	 * 获取磁盘快照的applyIdx
+	 *
+	 * @return 快照的applyIdx
+	 */
+	@Override
+	public int getSnapshotApplyIdx() {
+		return lastSnapshotApplyIdx;
 	}
 
 	@Override
 	public final Snapshot getSnapshot() {
 		lock.lock();
 		try {
-			return new Snapshot(applyTerm, applyIdx, getSnapshotData());
+			return new Snapshot(applyTerm, applyIdx, deepCopySnapshotData());
 		} finally {
 			lock.unlock();
 		}
@@ -45,7 +81,7 @@ public abstract class VersionDataStorage<T> implements DataStorage {
 	 * 
 	 * @return 快照副本
 	 */
-	public abstract byte[] getSnapshotData();
+	public abstract byte[] deepCopySnapshotData();
 
 	@Override
 	public final Object apply(long logTerm, int logIdx, String command) {
@@ -62,7 +98,7 @@ public abstract class VersionDataStorage<T> implements DataStorage {
 				lock.unlock();
 			}
 		} else {
-			log.warn("discontinuous log index: {}, current index: {}", logIdx, this.applyIdx);
+			log.warn("apply failed, log index: {}, current apply index: {}", logIdx, this.applyIdx);
 		}
 		return null;
 	}
@@ -87,7 +123,9 @@ public abstract class VersionDataStorage<T> implements DataStorage {
 	public final void saveSnapshotToFile() {
 		lock.lock();
 		try {
-			saveSnapshotToFile(getSnapshot());
+			this.lastSnapshotApplyIdx = this.applyIdx;
+			Snapshot snapshot = getSnapshot();
+			saveSnapshotToFile(snapshot);
 		} finally {
 			lock.unlock();
 		}
@@ -108,6 +146,7 @@ public abstract class VersionDataStorage<T> implements DataStorage {
 			this.applyTerm = applyTerm;
 			this.applyIdx = applyIdx;
 			saveSnapshot(data);
+			saveSnapshotToFile();
 		} finally {
 			lock.unlock();
 		}
@@ -120,4 +159,21 @@ public abstract class VersionDataStorage<T> implements DataStorage {
 	 *            数据
 	 */
 	public abstract void saveSnapshot(byte[] data);
+
+	public abstract String doValidateCommand(String command);
+
+	/**
+	 * 校验命令
+	 *
+	 * @param command
+	 *            命令
+	 * @return String
+	 */
+	@Override
+	public String validateCommand(String command) {
+		if (Utils.NO_OP.equals(command)) {
+			return "";
+		}
+		return doValidateCommand(command);
+	}
 }

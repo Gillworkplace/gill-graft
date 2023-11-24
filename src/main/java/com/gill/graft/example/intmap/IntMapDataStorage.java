@@ -3,7 +3,9 @@ package com.gill.graft.example.intmap;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,8 @@ public class IntMapDataStorage extends VersionDataStorage<IntMapCommand> {
 
 	private Map<String, Integer> map = new ConcurrentHashMap<>(1024);
 
+	private final Map<String, AtomicInteger> mapCnt = new ConcurrentHashMap<>(1024);
+
 	private final IntMapCommandSerializer serializer = new IntMapCommandSerializer();
 
 	/**
@@ -39,19 +43,42 @@ public class IntMapDataStorage extends VersionDataStorage<IntMapCommand> {
 		return map.get(key);
 	}
 
+	public Integer cnt(String key) {
+		return mapCnt.getOrDefault(key, new AtomicInteger(0)).get();
+	}
+
+	/**
+	 * 校验命令
+	 *
+	 * @param command
+	 *            命令
+	 * @return 校验是否通过
+	 */
 	@Override
-	public int getApplyIdx() {
-		return 0;
+	public String doValidateCommand(String command) {
+		return "";
+	}
+
+	/**
+	 * 加载快照应用的索引位置与版本
+	 *
+	 * @return 版本, 索引位置
+	 */
+	@Override
+	protected Pair<Long, Integer> loadApplyTermAndIdx() {
+		return new Pair<>(0L, 0);
+	}
+
+	/**
+	 * 加载数据
+	 */
+	@Override
+	protected void loadData() {
+		this.map = new ConcurrentHashMap<>(1024);
 	}
 
 	@Override
-	public int loadSnapshot() {
-		map = new ConcurrentHashMap<>(1024);
-		return 0;
-	}
-
-	@Override
-	public byte[] getSnapshotData() {
+	public byte[] deepCopySnapshotData() {
 		String mapStr = JSONUtil.toJsonStr(map);
 		return mapStr.getBytes(StandardCharsets.UTF_8);
 	}
@@ -63,6 +90,8 @@ public class IntMapDataStorage extends VersionDataStorage<IntMapCommand> {
 
 	@Override
 	public Object apply(IntMapCommand command) {
+		AtomicInteger updateCnt = mapCnt.computeIfAbsent(command.getKey(), key -> new AtomicInteger(0));
+		updateCnt.incrementAndGet();
 		return command.execute(map, command);
 	}
 

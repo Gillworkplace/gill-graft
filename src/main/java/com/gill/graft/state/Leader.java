@@ -37,12 +37,13 @@ public class Leader {
 		ExecutorService heartbeatPool = self.getThreadPools().getClusterPool();
 		int selfId = self.getId();
 		long term = params.getTerm();
+		int commitIdx = self.getCommitIdx();
 		self.getSchedulers().setHeartbeatScheduler(() -> {
 			List<RaftRpcService> followers = self.getFollowers();
 			log.debug("broadcast heartbeat");
 			boolean success = Utils.majorityCall(followers,
-					follower -> doHeartbeat(selfId, term, follower, self::unstable), Reply::isSuccess, heartbeatPool,
-					"heartbeat");
+					follower -> doHeartbeat(selfId, term, commitIdx, follower, self::unstable), Reply::isSuccess,
+					heartbeatPool, "heartbeat");
 			if (!success) {
 				log.warn("broadcast heartbeat failed");
 				self.stepDown();
@@ -50,8 +51,9 @@ public class Leader {
 		}, self.getConfig(), selfId);
 	}
 
-	private static Reply doHeartbeat(int nodeId, long term, RaftRpcService follower, Runnable extraFunc) {
-		AppendLogEntriesParam param = new AppendLogEntriesParam(nodeId, term);
+	private static Reply doHeartbeat(int nodeId, long term, int commitIdx, RaftRpcService follower,
+			Runnable extraFunc) {
+		AppendLogEntriesParam param = new AppendLogEntriesParam(nodeId, term, commitIdx);
 		AppendLogReply reply = new AppendLogReply(false, -1);
 		try {
 			reply = follower.appendLogEntries(param);
@@ -101,6 +103,10 @@ public class Leader {
 		ProposeHelper proposeHelper = self.getProposeHelper();
 		LogManager logManager = self.getLogManager();
 		int lastLogIdx = logManager.lastLog().getValue();
+
+		// 被选举的leader是通过与follower对比过日志索引后选出的，因此该leader的日志版本能保证其他集群中达成共识的日志条目都会存在于leader中。
+		// 同时raft算法在会以leader的日志条目为主进行同步（***包括leader中在上个任期内未提交的日志）
+		self.resetCommittedIdx(lastLogIdx);
 		proposeHelper.start(self, self.getFollowers(), lastLogIdx);
 	}
 

@@ -61,7 +61,7 @@ public class NodeProxy implements Runnable, PrintService {
 				r -> new Thread(r, "node-proxy-" + self.getId() + "-" + follower.getId()));
 	}
 
-	public int getID() {
+	public int getId() {
 		return follower.getId();
 	}
 
@@ -134,7 +134,7 @@ public class NodeProxy implements Runnable, PrintService {
 		int nodeId = self.getId();
 		long term = self.getTerm();
 		long preLogTerm = self.getLogManager().getLog(preLogIdx).getTerm();
-		int committedIdx = self.getCommittedIdx();
+		int committedIdx = self.getCommitIdx();
 		AppendLogEntriesParam param = new AppendLogEntriesParam(nodeId, term, preLogTerm, preLogIdx, committedIdx,
 				appendLogs);
 		log.debug("node: {} proposes to {}, logs: {}, committedIdx: {}", nodeId, follower.getId(), appendLogs,
@@ -206,7 +206,7 @@ public class NodeProxy implements Runnable, PrintService {
 		DataStorage dataStorage = self.getDataStorage();
 
 		// 如果compareIdx小于 snapshot 的 applyIdx说明同步的日志可能已被删除，直接同步快照
-		if (compareIdx < dataStorage.getApplyIdx()) {
+		if (compareIdx < dataStorage.getSnapshotApplyIdx()) {
 			log.debug("node: {} is repairing logs, but needs to sync snapshots", self.getId());
 			syncSnapshot(entries);
 			return;

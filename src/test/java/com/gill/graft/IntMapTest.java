@@ -2,15 +2,19 @@ package com.gill.graft;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import com.gill.graft.apis.RaftRpcService;
+import com.gill.graft.example.intmap.IntMapDataStorage;
 import com.gill.graft.mock.MockIntMapServer;
 import com.gill.graft.mock.NodeRpcWrapper;
+import com.gill.graft.statistic.CostStatistic;
 
 import cn.hutool.core.util.RandomUtil;
 
@@ -66,6 +70,26 @@ public class IntMapTest extends BaseTest {
 		leader.set("test", 321);
 		System.out.println("============ TEST FINISHED ===============");
 		Assertions.assertEquals(321, leader.get("test"));
+		stopServers(servers);
+	}
+
+	@RepeatedTest(10)
+	public void testParallelPutsGetCommand_Leader() {
+		List<MockIntMapServer> servers = nodesInit(3);
+		MockIntMapServer leader = findLeader(servers);
+		CostStatistic statistic = CostStatistic.newStatistic();
+		CompletableFuture<?>[] futures = IntStream.range(0, 10)
+				.mapToObj(x -> CompletableFuture
+						.supplyAsync(() -> CostStatistic.cost(() -> leader.set(String.valueOf(x), x), statistic)))
+				.toArray(CompletableFuture[]::new);
+		CompletableFuture.allOf(futures).join();
+		IntMapDataStorage dataStorage = leader.getDataStorage();
+		IntStream.range(0, 10).forEach(x -> Assertions.assertEquals(1, dataStorage.cnt(String.valueOf(x)),
+				"cnt assert failed: \n" + dataStorage.println() + "\nnode: \n" + leader.getNode().println()));
+		IntStream.range(0, 10).forEach(x -> Assertions.assertEquals(x, dataStorage.get(String.valueOf(x)),
+				"get assert failed: \n" + dataStorage.println() + "\nnode: \n" + leader.getNode().println()));
+		statistic.println();
+		System.out.println("============ TEST FINISHED ===============");
 		stopServers(servers);
 	}
 

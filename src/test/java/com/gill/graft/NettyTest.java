@@ -8,13 +8,13 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import com.gill.graft.statistic.CostStatistic;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import com.gill.graft.apis.RaftRpcService;
-import com.gill.graft.common.Utils;
 import com.gill.graft.config.RaftConfig;
 import com.gill.graft.entity.AppendLogEntriesParam;
 import com.gill.graft.entity.AppendLogReply;
@@ -67,7 +67,7 @@ public class NettyTest extends BaseTest {
 		authConfig.setAuthKey(1);
 		authConfig.setAuthValue(new byte[]{79, 23, 12});
 		NettyRpcService service = newNettyRpcService(HOST, port, () -> raftConfig, false);
-		int id = Utils.cost(service::getId, "getId");
+		int id = CostStatistic.cost(service::getId, "getId");
 		Assertions.assertEquals(-1, id);
 		node.stop();
 	}
@@ -81,7 +81,7 @@ public class NettyTest extends BaseTest {
 		authConfig.setAuthKey(1);
 		authConfig.setAuthValue(new byte[]{79, 23, 12});
 		NettyRpcService service = newNettyRpcService(HOST, port, () -> raftConfig, false);
-		int id = Utils.cost(service::getId, "getId");
+		int id = CostStatistic.cost(service::getId, "getId");
 		Assertions.assertEquals(-1, id);
 		node.stop();
 	}
@@ -125,7 +125,7 @@ public class NettyTest extends BaseTest {
 		Node node = genNode();
 		int port = node.getConfig().getPort();
 		NettyRpcService service = newNettyRpcService(HOST, port, RaftConfig::new, true);
-		AppendLogEntriesParam param = new AppendLogEntriesParam(MOCK_NODE_ID, MOCK_NODE_TERM);
+		AppendLogEntriesParam param = new AppendLogEntriesParam(MOCK_NODE_ID, MOCK_NODE_TERM, 0);
 		AppendLogReply reply = service.appendLogEntries(param);
 		Assertions.assertTrue(reply.isSuccess(), reply.toString());
 		Assertions.assertEquals(MOCK_NODE_TERM, reply.getTerm(), reply.toString());

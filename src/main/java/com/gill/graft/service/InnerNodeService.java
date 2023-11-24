@@ -1,12 +1,12 @@
 package com.gill.graft.service;
 
-import com.gill.graft.common.Utils;
 import com.gill.graft.entity.AppendLogEntriesParam;
 import com.gill.graft.entity.AppendLogReply;
 import com.gill.graft.entity.PreVoteParam;
 import com.gill.graft.entity.ReplicateSnapshotParam;
 import com.gill.graft.entity.Reply;
 import com.gill.graft.entity.RequestVoteParam;
+import com.gill.graft.statistic.CostStatistic;
 
 /**
  * NodeService
@@ -34,7 +34,7 @@ public interface InnerNodeService extends NodeService {
 		if (!isMachineReady()) {
 			return new Reply(false, -1);
 		}
-		return Utils.cost(() -> doPreVote(param), "pre-vote");
+		return CostStatistic.cost(() -> doPreVote(param), "pre-vote");
 	}
 
 	/**
@@ -57,7 +57,7 @@ public interface InnerNodeService extends NodeService {
 		if (!isMachineReady()) {
 			return new Reply(false, -1);
 		}
-		return Utils.cost(() -> doRequestVote(param), "request-vote");
+		return CostStatistic.cost(() -> doRequestVote(param), "request-vote");
 	}
 
 	/**
@@ -80,7 +80,7 @@ public interface InnerNodeService extends NodeService {
 		if (!isMachineReady()) {
 			return new AppendLogReply(false, -1);
 		}
-		return Utils.cost(() -> doAppendLogEntries(param), "append-log-entries");
+		return CostStatistic.cost(() -> doAppendLogEntries(param), "append-log-entries");
 	}
 
 	/**
@@ -103,7 +103,7 @@ public interface InnerNodeService extends NodeService {
 		if (!isMachineReady()) {
 			return new AppendLogReply(false, -1);
 		}
-		return Utils.cost(() -> doReplicateSnapshot(param), "replicate-snapshot");
+		return CostStatistic.cost(() -> doReplicateSnapshot(param), "replicate-snapshot");
 	}
 
 	/**

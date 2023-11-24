@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import com.gill.graft.apis.RaftRpcService;
 import com.gill.graft.mock.MockNode;
+import com.gill.graft.model.ProposeReply;
 
 import cn.hutool.core.util.RandomUtil;
 
@@ -137,7 +138,7 @@ public class NodeTest extends BaseTest {
 				.toArray(CompletableFuture[]::new);
 		CompletableFuture.allOf(futures).join();
 		for (int i = 0; i < futures.length; i++) {
-			Assertions.assertNotEquals("-1", String.valueOf(futures[i].get()), "i: " + i);
+			Assertions.assertTrue(((ProposeReply) futures[i].get()).isSuccess(), "i: " + i);
 		}
 		assertLogs(nodes);
 		System.out.println("============ TEST FINISHED =============");
@@ -170,11 +171,14 @@ public class NodeTest extends BaseTest {
 	@RepeatedTest(5)
 	public void testRepairLogs_AfterLeaderDownAndUp() {
 		List<MockNode> nodes = nodesInitUntilStable(5);
+		MockNode originLeader = findLeader(nodes);
+		originLeader.propose("1");
+		originLeader.propose("2");
 		MockNode follower = findFollower(nodes);
 		follower.stop();
 		System.out.println("============ FOLLOWER STOPPED =============");
-		MockNode originLeader = findLeader(nodes);
-		originLeader.propose("1");
+		originLeader.propose("after follower stop 3");
+		originLeader.propose("after follower stop 4");
 		originLeader.stop();
 		System.out.println("============ LEADER STOPPED =============");
 		follower.start(getFollowers(nodes, follower));
@@ -183,8 +187,10 @@ public class NodeTest extends BaseTest {
 		System.out.println("============ FIND NEW LEADER =============");
 		originLeader.start(getFollowers(nodes, originLeader));
 		System.out.println("============ ORIGIN LEADER STARTED =============");
-		Assertions.assertEquals(4, (int) newLeader.propose("2").getIdx());
-		Assertions.assertEquals(-1, originLeader.propose("123").getIdx());
+		ProposeReply propose5 = newLeader.propose("all up 5");
+		Assertions.assertTrue(propose5.isSuccess());
+		ProposeReply proposeF = originLeader.propose("follower propose");
+		Assertions.assertFalse(proposeF.isSuccess());
 		assertAllLogs(nodes);
 		System.out.println("============ TEST FINISHED =============");
 		stopNodes(nodes);
@@ -200,8 +206,11 @@ public class NodeTest extends BaseTest {
 		waitUtilLeaderStable(nodes);
 		MockNode newLeader = findLeader(nodes);
 		System.out.println("============ FIND NEW LEADER =============");
-		Assertions.assertEquals(4, (int) newLeader.propose("2").getIdx());
-		Assertions.assertEquals(-1, originLeader.propose("123").getIdx());
+		ProposeReply propose2 = newLeader.propose("2");
+		Assertions.assertTrue(propose2.isSuccess());
+		Assertions.assertEquals(4, (int) propose2.getIdx());
+		ProposeReply propose123 = originLeader.propose("123");
+		Assertions.assertFalse(propose123.isSuccess());
 		assertAllLogs(nodes, originLeader);
 		System.out.println("============ TEST FINISHED =============");
 		stopNodes(nodes);
@@ -215,14 +224,16 @@ public class NodeTest extends BaseTest {
 		MockNode follower = findFollower(nodes);
 		follower.stop();
 		System.out.println("============ FOLLOWER STOPPED =============");
-		Assertions.assertEquals(3, (int) leader.propose("2").getIdx());
+		ProposeReply propose = leader.propose("2");
+		Assertions.assertTrue(propose.isSuccess());
+		Assertions.assertEquals(3, (int) propose.getIdx());
 		assertAllLogs(nodes, follower);
 		System.out.println("============ TEST FINISHED =============");
 		stopNodes(nodes);
 	}
 
 	@Test
-	public void testRepairLogs_AfterMoreFollowersDown_Failed() {
+	public void testRepairLogs_AfterMoreThanHalfFollowersDown_Failed() {
 		int n = 5;
 		List<MockNode> nodes = nodesInitUntilStable(n);
 		MockNode leader = findLeader(nodes);
@@ -232,7 +243,8 @@ public class NodeTest extends BaseTest {
 			follower.stop();
 		}
 		System.out.println("============ FOLLOWERS STOPPED =============");
-		Assertions.assertEquals(-1, (int) leader.propose("2").getIdx());
+		ProposeReply propose = leader.propose("2");
+		Assertions.assertFalse(propose.isSuccess());
 		System.out.println("============ TEST FINISHED =============");
 		stopNodes(nodes);
 	}

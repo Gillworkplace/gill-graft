@@ -25,8 +25,9 @@ public class AppendLogEntriesParam extends BaseParam {
 
 	private List<LogEntry> logs;
 
-	public AppendLogEntriesParam(int nodeId, long term) {
+	public AppendLogEntriesParam(int nodeId, long term, int commitIdx) {
 		super(nodeId, term);
+		this.commitIdx = commitIdx;
 	}
 
 	public AppendLogEntriesParam(int nodeId, long term, long preLogTerm, int preLogIdx, int commitIdx,

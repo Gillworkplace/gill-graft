@@ -4,6 +4,8 @@ import com.gill.graft.apis.CommandSerializer;
 import com.gill.graft.apis.VersionDataStorage;
 import com.gill.graft.model.Snapshot;
 
+import javafx.util.Pair;
+
 /**
  * EmptyRepository
  *
@@ -14,15 +16,10 @@ public class EmptyDataStorage extends VersionDataStorage<String> {
 
 	public static final EmptyDataStorage INSTANCE = new EmptyDataStorage();
 
-	private CommandSerializer<String> commandSerializer = new EmptyCommandSerializer();
+	private final CommandSerializer<String> commandSerializer = new EmptyCommandSerializer();
 
 	@Override
-	public int getApplyIdx() {
-		return 0;
-	}
-
-	@Override
-	public byte[] getSnapshotData() {
+	public byte[] deepCopySnapshotData() {
 		return new byte[0];
 	}
 
@@ -31,9 +28,33 @@ public class EmptyDataStorage extends VersionDataStorage<String> {
 		return commandSerializer;
 	}
 
+	/**
+	 * 加载快照应用的索引位置与版本
+	 *
+	 * @return 版本, 索引位置
+	 */
 	@Override
-	public int loadSnapshot() {
-		return 0;
+	protected Pair<Long, Integer> loadApplyTermAndIdx() {
+		return new Pair<>(0L, 0);
+	}
+
+	/**
+	 * 加载数据
+	 */
+	@Override
+	protected void loadData() {
+	}
+
+	/**
+	 * 校验命令
+	 *
+	 * @param command
+	 *            命令
+	 * @return 校验是否通过
+	 */
+	@Override
+	public String doValidateCommand(String command) {
+		return "";
 	}
 
 	@Override

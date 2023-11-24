@@ -19,6 +19,13 @@ public interface DataStorage extends PrintService {
 	int getApplyIdx();
 
 	/**
+	 * 获取磁盘快照的applyIdx
+	 * 
+	 * @return 快照的applyIdx
+	 */
+	int getSnapshotApplyIdx();
+
+	/**
 	 * 加载数据
 	 *
 	 * @return applyIdx
@@ -61,4 +68,13 @@ public interface DataStorage extends PrintService {
 	 * @return 返回值
 	 */
 	Object apply(long logTerm, int logIdx, String command);
+
+	/**
+	 * 校验命令
+	 * 
+	 * @param command
+	 *            命令
+	 * @return String
+	 */
+	String validateCommand(String command);
 }

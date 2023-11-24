@@ -28,7 +28,7 @@ import com.gill.graft.model.LogEntry;
 public class MockNode extends Node implements TestMethod, RaftRpcService {
 
 	private MockNode(int id) {
-		super(id, new EmptyMetaStorage(), new EmptyDataStorage(), new EmptyLogStorage());
+		super(id, EmptyMetaStorage.INSTANCE, EmptyDataStorage.INSTANCE, EmptyLogStorage.INSTANCE);
 	}
 
 	public static MockNode newNode(int id) {

@@ -33,9 +33,13 @@ public class MockIntMapServer extends IntMapServer implements TestMethod {
 		return TestUtils.getField(getNode(), "machine");
 	}
 
+	public IntMapDataStorage getDataStorage() {
+		return TestUtils.getField(this, "dataStorage");
+	}
+
 	public void updateCommittedIdx(int committedIdx) {
 		Node node = getNode();
-		node.setCommittedIdx(committedIdx);
+		node.setCommitIdx(committedIdx);
 	}
 
 	public void clearLogsAndData() {

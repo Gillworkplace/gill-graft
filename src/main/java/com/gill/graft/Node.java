@@ -9,7 +9,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
-import com.gill.graft.rpc.server.NettyServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +38,7 @@ import com.gill.graft.model.ProposeReply;
 import com.gill.graft.proto.RaftConverter;
 import com.gill.graft.rpc.MetricsRegistry;
 import com.gill.graft.rpc.ServiceRegistry;
+import com.gill.graft.rpc.server.NettyServer;
 import com.gill.graft.service.InnerNodeService;
 import com.gill.graft.service.PrintService;
 import com.gill.graft.service.RaftService;
@@ -64,7 +64,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	private int priority = 0;
 
-	private final AtomicInteger committedIdx = new AtomicInteger(0);
+	private final AtomicInteger commitIdx = new AtomicInteger(0);
 
 	/**
 	 * 状态机状态是否稳定 稳定：收到更高版本的心跳包; leader的op请求过半数成功响应 不稳定：心跳检测超时; leader的心跳包过半数发送失败
@@ -97,7 +97,9 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 	private transient final LogManager logManager;
 
-	private final transient ProposeHelper proposeHelper = new ProposeHelper(threadPools::getApiPool);
+	private transient final ProposeHelper proposeHelper;
+
+	private transient final ApplyWorker applyWorker;
 
 	private final ServiceRegistry serviceRegistry = new ServiceRegistry();
 
@@ -127,7 +129,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	}
 
 	protected Node(int id) {
-		this(id, new EmptyMetaStorage(), new EmptyDataStorage(), new EmptyLogStorage());
+		this(id, EmptyMetaStorage.INSTANCE, EmptyDataStorage.INSTANCE, EmptyLogStorage.INSTANCE);
 	}
 
 	protected Node(int id, MetaStorage metaStorage, DataStorage dataStorage, LogStorage logStorage) {
@@ -136,6 +138,9 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		this.dataStorage = dataStorage;
 		this.logManager = new LogManager(logStorage, this.config.getLogConfig());
 		this.metricsRegistry = new MetricsRegistry(this.id);
+		this.applyWorker = new ApplyWorker(this.id, this.dataStorage, this.logManager, this.dataStorage::getApplyIdx,
+				this::getCommitIdx);
+		this.proposeHelper = new ProposeHelper(threadPools::getApiPool, applyWorker);
 	}
 
 	public static Node newNode() {
@@ -197,26 +202,34 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		return metaDataManager.increaseTerm(originTerm, id);
 	}
 
-	public int getCommittedIdx() {
-		return committedIdx.get();
+	public int getCommitIdx() {
+		return commitIdx.get();
 	}
 
-	public void setCommittedIdx(int committedIdx) {
-		this.committedIdx.accumulateAndGet(committedIdx, Math::max);
+	public void setCommitIdx(int commitIdx) {
+		this.commitIdx.accumulateAndGet(commitIdx, Math::max);
+		this.applyWorker.wakeup();
 	}
 
 	public void resetCommittedIdx(int committedIdx) {
-		this.committedIdx.set(committedIdx);
+		this.commitIdx.set(committedIdx);
+		this.applyWorker.wakeup();
 	}
 
 	public boolean isStable() {
 		return stable.get();
 	}
 
+	/**
+	 * 将节点设为稳定状态
+	 */
 	public void stable() {
 		stable.set(true);
 	}
 
+	/**
+	 * 将节点设为不稳定状态
+	 */
 	public void unstable() {
 		stable.set(false);
 	}
@@ -244,9 +257,6 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 
 			// 初始化日志
 			initLog(applyIdx);
-
-			// 应用未应用的日志
-			applyFrom(applyIdx + 1);
 		} finally {
 			lock.unlock();
 		}
@@ -269,20 +279,6 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		log.debug("loading snapshot...");
 		logManager.init(applyIdx);
 		log.debug("finish loading snapshot...");
-	}
-
-	private void applyFrom(int logIdx) {
-		Pair<Long, Integer> lastLog = logManager.lastLog();
-		if (lastLog == null) {
-			return;
-		}
-		int lastLogIdx = lastLog.getValue();
-		log.debug("applying logs from {} to {} ...", logIdx, lastLogIdx);
-		for (int i = logIdx; i <= lastLogIdx; i++) {
-			LogEntry logEntry = logManager.getLog(i);
-			dataStorage.apply(logEntry.getTerm(), logEntry.getIndex(), logEntry.getCommand());
-		}
-		log.debug("finish applying logs.");
 	}
 
 	/**
@@ -441,12 +437,16 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		try {
 			long term = getTerm();
 			long pTerm = param.getTerm();
+			int pCommitIdx = param.getCommitIdx();
 			if (term > pTerm) {
 				return new AppendLogReply(false, term);
 			}
 			refreshLastHeartbeatTimestamp();
 			stepDown(pTerm, true);
 			stable();
+
+			// 更新committedIdx
+			setCommitIdx(pCommitIdx);
 
 			// 没有logs属性的为ping请求
 			if (param.getLogs() == null || param.getLogs().isEmpty()) {
@@ -457,7 +457,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 			log.debug("node: {} receive appends log from {}", id, param.getNodeId());
 
 			// 日志一致性检查
-			int committedIdx = getCommittedIdx();
+			int committedIdx = getCommitIdx();
 
 			// 如果当前节点的committedIdx 大于 leader的 committedIdx
 			// 说明当前节点的快照版本超前于 leader的版本，但一切以leader为准，因此需要重新同步快照信息
@@ -469,29 +469,20 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 			long lastLogTerm = pair.getKey();
 			int lastLogIdx = pair.getValue();
 
-			// 同步日志的其实索引不是本节点的下一个索引位置时，返回本节点的最后的日志索引，从该索引开始修复
-			if (lastLogIdx < param.getPreLogIdx()) {
-				return new AppendLogReply(false, pTerm, false, lastLogIdx);
-			}
-
 			// 如果版本不一致，批量从前 repairLength 的索引开始修复
 			if (lastLogTerm != param.getPreLogTerm()) {
 				return new AppendLogReply(false, pTerm, false, lastLogIdx - config.getRepairLength());
+			}
+
+			// 同步日志的其实索引不是本节点的下一个索引位置时，返回本节点的最后的日志索引，从该索引开始修复
+			if (lastLogIdx < param.getPreLogIdx()) {
+				return new AppendLogReply(false, pTerm, false, lastLogIdx);
 			}
 
 			List<LogEntry> logs = param.getLogs();
 
 			// 记录日志
 			logs.forEach(logManager::appendLog);
-
-			// 应用日志
-			for (int idx = committedIdx + 1; idx <= param.getCommitIdx(); idx++) {
-				LogEntry logEntry = logManager.getLog(idx);
-				dataStorage.apply(pTerm, idx, logEntry.getCommand());
-			}
-
-			// 更新committedIdx
-			setCommittedIdx(param.getCommitIdx());
 			refreshLastHeartbeatTimestamp();
 			return new AppendLogReply(true, pTerm);
 		} finally {
@@ -543,6 +534,9 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 		// 启动状态机
 		this.machine.start();
 
+		// 启动应用工作线程
+		this.applyWorker.start();
+
 		// 加载数据
 		loadData();
 
@@ -574,6 +568,7 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	public synchronized void stop() {
 		uninitialized();
 		this.publishEvent(RaftEvent.STOP, new RaftEventParams(Integer.MAX_VALUE, true));
+		this.applyWorker.stop();
 		this.machine.stop();
 		schedulers.getSnapshotScheduler().stop();
 		this.metricsRegistry.remove();
@@ -589,71 +584,20 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	@Override
 	public ProposeReply propose(String command) {
 		if (!isMachineReady() || machine.getState() != RaftState.LEADER) {
-			return new ProposeReply(-1);
+			return new ProposeReply("not ready");
 		}
 		log.debug("node: {} propose {}", id, command);
+		String validateMessage = dataStorage.validateCommand(command);
+		if (Utils.isNotEmpty(validateMessage)) {
+			return new ProposeReply(validateMessage);
+		}
 		LogEntry logEntry = logManager.createLog(getTerm(), command);
-		ProposeReply reply = new ProposeReply();
-		int logIdx = proposeHelper.propose(logEntry, () -> {
-			if (command != null) {
-				log.debug("data storage apply idx: {}, command: {}", logEntry.getIndex(), command);
-				Object res = dataStorage.apply(logEntry.getTerm(), logEntry.getIndex(), command);
-				reply.setData(res);
-			}
-			setCommittedIdx(logEntry.getIndex());
-		});
-		reply.setIdx(logIdx);
-		return reply;
+		return proposeHelper.propose(logEntry, this::setCommitIdx);
 	}
 
 	@Override
 	public boolean checkReadIndex(int readIdx) {
-		return readIdx <= committedIdx.get();
-	}
-
-	@Override
-	public String println() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("===================").append(System.lineSeparator());
-		sb.append("node id: ").append(id).append("\t").append(machine.getState().name()).append(System.lineSeparator());
-		sb.append("persistent properties: ").append(metaDataManager.println()).append(System.lineSeparator());
-		sb.append("committed idx: ").append(getCommittedIdx()).append(System.lineSeparator());
-		sb.append("heartbeat state: ").append(heartbeatState).append(System.lineSeparator());
-		sb.append("self: ").append(this).append(System.lineSeparator());
-		sb.append("followers: ").append(followers).append(System.lineSeparator());
-		sb.append("===================").append(System.lineSeparator());
-		sb.append("THREAD POOL").append(System.lineSeparator());
-		sb.append("cluster pool: ")
-				.append(Optional.ofNullable(threadPools.getClusterPool()).map(Object::toString).orElse("none"))
-				.append(System.lineSeparator());
-		sb.append("api pool: ")
-				.append(Optional.ofNullable(threadPools.getApiPool()).map(Object::toString).orElse("none"))
-				.append(System.lineSeparator());
-		sb.append("===================").append(System.lineSeparator());
-		sb.append("SCHEDULER").append(System.lineSeparator());
-		sb.append("timeout scheduler: ")
-				.append(Optional.ofNullable(schedulers.getTimeoutScheduler()).map(Object::toString).orElse("none"))
-				.append(System.lineSeparator());
-		sb.append("heartbeat scheduler: ")
-				.append(Optional.ofNullable(schedulers.getHeartbeatScheduler()).map(Object::toString).orElse("none"))
-				.append(System.lineSeparator());
-		sb.append("===================").append(System.lineSeparator());
-		sb.append("STATE MACHINE").append(System.lineSeparator());
-		sb.append(machine.println()).append(System.lineSeparator());
-		sb.append("===================").append(System.lineSeparator());
-		sb.append("CONFIG").append(System.lineSeparator());
-		sb.append(config.toString()).append(System.lineSeparator());
-		sb.append("===================").append(System.lineSeparator());
-		sb.append("PROPOSE HELPER").append(System.lineSeparator());
-		sb.append(proposeHelper.println()).append(System.lineSeparator());
-		sb.append("===================").append(System.lineSeparator());
-		sb.append("LOG MANAGER").append(System.lineSeparator());
-		sb.append(logManager.println()).append(System.lineSeparator());
-		sb.append("===================").append(System.lineSeparator());
-		sb.append("DATA STORAGE").append(System.lineSeparator());
-		sb.append(dataStorage.println()).append(System.lineSeparator());
-		sb.append("===================").append(System.lineSeparator());
-		return sb.toString();
+		return readIdx <= commitIdx.get();
 	}
 
 	@Override
@@ -700,5 +644,52 @@ public class Node implements InnerNodeService, RaftService, PrintService {
 	@Override
 	public String toString() {
 		return String.format("id=%s,state=%s,term=%s;", id, machine.getState(), getTerm());
+	}
+
+	@Override
+	public String println() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("===================").append(System.lineSeparator());
+		sb.append("node id: ").append(id).append("\t").append(machine.getState().name()).append(System.lineSeparator());
+		sb.append("persistent properties: ").append(metaDataManager.println()).append(System.lineSeparator());
+		sb.append("committed idx: ").append(getCommitIdx()).append(System.lineSeparator());
+		sb.append("heartbeat state: ").append(heartbeatState).append(System.lineSeparator());
+		sb.append("self: ").append(this).append(System.lineSeparator());
+		sb.append("followers: ").append(followers).append(System.lineSeparator());
+		sb.append("===================").append(System.lineSeparator());
+		sb.append("THREAD POOL").append(System.lineSeparator());
+		sb.append("cluster pool: ")
+				.append(Optional.ofNullable(threadPools.getClusterPool()).map(Object::toString).orElse("none"))
+				.append(System.lineSeparator());
+		sb.append("api pool: ")
+				.append(Optional.ofNullable(threadPools.getApiPool()).map(Object::toString).orElse("none"))
+				.append(System.lineSeparator());
+		sb.append("===================").append(System.lineSeparator());
+		sb.append("SCHEDULER").append(System.lineSeparator());
+		sb.append("timeout scheduler: ")
+				.append(Optional.ofNullable(schedulers.getTimeoutScheduler()).map(Object::toString).orElse("none"))
+				.append(System.lineSeparator());
+		sb.append("heartbeat scheduler: ")
+				.append(Optional.ofNullable(schedulers.getHeartbeatScheduler()).map(Object::toString).orElse("none"))
+				.append(System.lineSeparator());
+		sb.append("===================").append(System.lineSeparator());
+		sb.append("STATE MACHINE").append(System.lineSeparator());
+		sb.append(machine.println()).append(System.lineSeparator());
+		sb.append("===================").append(System.lineSeparator());
+		sb.append("CONFIG").append(System.lineSeparator());
+		sb.append(config.toString()).append(System.lineSeparator());
+		sb.append("===================").append(System.lineSeparator());
+		sb.append("PROPOSE HELPER").append(System.lineSeparator());
+		sb.append(proposeHelper.println()).append(System.lineSeparator());
+		sb.append("===================").append(System.lineSeparator());
+		sb.append("LOG MANAGER").append(System.lineSeparator());
+		sb.append(logManager.println()).append(System.lineSeparator());
+		sb.append("===================").append(System.lineSeparator());
+		sb.append("DATA STORAGE").append(System.lineSeparator());
+		sb.append(dataStorage.println()).append(System.lineSeparator());
+		sb.append("===================").append(System.lineSeparator());
+		sb.append("APPLY WORKER").append(System.lineSeparator());
+		sb.append(applyWorker.println()).append(System.lineSeparator());
+		return sb.toString();
 	}
 }

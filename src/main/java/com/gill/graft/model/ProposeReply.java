@@ -10,26 +10,41 @@ public class ProposeReply {
 
 	private Integer idx;
 
+	private boolean success;
+
+	private String exception = "";
+
 	private Object data;
 
-	public ProposeReply() {
+	public ProposeReply(int logIdx) {
+		this.idx = logIdx;
+		this.success = true;
 	}
 
-	public ProposeReply(Integer idx) {
-		this.idx = idx;
-	}
-
-	public ProposeReply(Integer idx, Object data) {
-		this.idx = idx;
-		this.data = data;
+	public ProposeReply(String exception) {
+		this.idx = -1;
+		this.exception = exception;
+		this.success = false;
 	}
 
 	public Integer getIdx() {
 		return idx;
 	}
 
-	public void setIdx(Integer idx) {
-		this.idx = idx;
+	public boolean isSuccess() {
+		return success;
+	}
+
+	public void setSuccess(boolean success) {
+		this.success = success;
+	}
+
+	public String getException() {
+		return exception;
+	}
+
+	public void setException(String exception) {
+		this.exception = exception;
 	}
 
 	public Object getData() {
@@ -42,6 +57,6 @@ public class ProposeReply {
 
 	@Override
 	public String toString() {
-		return "ProposeReply{" + "idx=" + idx + ", data=" + data + '}';
+		return "ProposeReply{" + "idx=" + idx + ", exception='" + exception + '\'' + ", data=" + data + '}';
 	}
 }

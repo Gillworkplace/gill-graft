@@ -166,7 +166,8 @@ public abstract class BaseTest {
 				if (excludeSet.contains(node.getId())) {
 					continue;
 				}
-				Assertions.assertEquals(expected, JSONUtil.toJsonStr(node.getLog()));
+				Assertions.assertEquals(expected, JSONUtil.toJsonStr(node.getLog()),
+						"expected nodeId: " + leader.getId() + "; not equals nodeId: " + node.getId());
 			}
 		} catch (Throwable e) {
 			System.out.println("============ AFTER EXCEPTION ===============");
